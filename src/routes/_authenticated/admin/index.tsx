@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, GraduationCap, Calendar, BookOpen, Layers, Shield, QrCode, Radio, ClipboardCheck } from "lucide-react";
+import { Users, GraduationCap, Calendar, BookOpen, Layers, Shield, QrCode, Radio, ClipboardCheck, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminDashboard,
