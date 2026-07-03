@@ -235,17 +235,29 @@ export function EnrollmentForm({
                 <CheckCircle2 className="size-5 text-primary" /> تم التسجيل بنجاح
               </CardTitle>
               <CardDescription>
-                شارك هذه البيانات مع الطالب واحفظها الآن — لن تظهر مرة أخرى.
+                احفظ هذه البيانات الآن وسلّمها للطالب. يمكن الرجوع لرمز QR وكلمة المرور
+                من ملف الطالب.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
+              <div className="text-sm">
+                <div className="font-semibold">{currentName}</div>
+                <div className="text-xs text-muted-foreground">
+                  {[currentCourse, currentGroup, currentYear].filter(Boolean).join(" • ") || "—"}
+                </div>
+              </div>
+
+              <QrDisplay
+                token={result.qr_token}
+                studentCode={result.student_code}
+                studentName={currentName}
+                size={200}
+              />
+
               <div>
                 <Label className="text-xs text-muted-foreground">رقم الطالب</Label>
                 <div className="mt-1 flex items-center gap-2">
-                  <code
-                    className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm"
-                    dir="ltr"
-                  >
+                  <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm" dir="ltr">
                     {result.student_code}
                   </code>
                   <Button size="icon" variant="outline" onClick={() => copy(result.student_code)}>
@@ -256,10 +268,7 @@ export function EnrollmentForm({
               <div>
                 <Label className="text-xs text-muted-foreground">كلمة المرور المؤقتة</Label>
                 <div className="mt-1 flex items-center gap-2">
-                  <code
-                    className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm"
-                    dir="ltr"
-                  >
+                  <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm" dir="ltr">
                     {result.temp_password}
                   </code>
                   <Button size="icon" variant="outline" onClick={() => copy(result.temp_password)}>
@@ -267,13 +276,45 @@ export function EnrollmentForm({
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                يستطيع الطالب تسجيل الدخول عبر{" "}
-                <span className="font-mono" dir="ltr">
-                  /student/login
-                </span>{" "}
-                باستخدام رقمه وكلمة المرور هذه.
-              </p>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const loginUrl = `${window.location.origin}/student/login`;
+                    const msg =
+                      `مرحباً،\n\nتم تسجيلك بنجاح في مركز الأحياء.\n\n` +
+                      `رقم الطالب:\n${result.student_code}\n\n` +
+                      `كلمة المرور المؤقتة:\n${result.temp_password}\n\n` +
+                      `رابط بوابة الطالب:\n${loginUrl}\n\n` +
+                      `يرجى تغيير كلمة المرور بعد أول تسجيل دخول.`;
+                    const phone = form.parent_phone || form.student_phone || "";
+                    const digits = phone.replace(/\D/g, "");
+                    const url = digits
+                      ? `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`
+                      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                    window.open(url, "_blank");
+                  }}
+                >
+                  <MessageCircle className="ms-2 size-4" /> واتساب
+                </Button>
+                <Link to={`${profileHrefBase}/$id`} params={{ id: result.student_user_id }}>
+                  <Button variant="outline" className="w-full">
+                    <UserRound className="ms-2 size-4" /> ملف الطالب
+                  </Button>
+                </Link>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setResult(null);
+                }}
+              >
+                <RefreshCw className="ms-2 size-4" /> تسجيل طالب آخر
+              </Button>
             </CardContent>
           </Card>
         )}
