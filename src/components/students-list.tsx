@@ -17,10 +17,19 @@ export function StudentsList({ newHref }: { newHref: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
-        .select("id, student_code, status, enrolled_at, student_phone, user_id, courses(name), groups(name), profiles!students_user_id_fkey(full_name)")
+        .select("id, student_code, status, enrolled_at, student_phone, user_id, courses(name), groups(name)")
         .order("enrolled_at", { ascending: false });
       if (error) throw error;
-      return data;
+      const ids = (data ?? []).map((s) => s.user_id).filter(Boolean) as string[];
+      const profileMap = new Map<string, string>();
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+        (profs ?? []).forEach((p) => profileMap.set(p.id, p.full_name ?? ""));
+      }
+      return (data ?? []).map((s) => ({
+        ...s,
+        profiles: { full_name: profileMap.get(s.user_id ?? "") ?? "" },
+      }));
     },
   });
 
