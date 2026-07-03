@@ -13,7 +13,7 @@ export const Route = createFileRoute("/change-password")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/staff/login" });
+    if (!data.user) throw redirect({ to: "/student/login" });
   },
   component: ChangePasswordPage,
 });

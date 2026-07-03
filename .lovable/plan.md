@@ -1,73 +1,77 @@
-## Scope
 
-This message bundles what we previously separated as Phase 3 (QR + Scanner + Realtime) and Phase 4 (Attendance), plus a few smaller items (rename staff login to `/admin/login`, harder-to-guess Student IDs, rich enrollment summary + WhatsApp handoff, credentials always visible on student profile). I'll ship it as one phase since the pieces are tightly coupled — the scanner is useless without QR, the reception popup is useless without realtime, and both feed the attendance table.
+# Final Phase Plan — Production-Ready SMS
 
-Payments, grades, profile pictures, reports/analytics stay for later phases as previously agreed.
+The scope you sent is very large (auth hardening + 4 new modules + reports + search + notifications + audit + polish). I'll deliver it in ordered milestones so each one is verifiable before moving on. Please confirm this order or tell me which milestones to reprioritize / drop.
 
-## What gets built
+## Milestone 1 — Portal isolation & login audit (do first, blocks everything else)
 
-### 1. Auth surface cleanup
-- Rename `/staff/login` → `/admin/login`. Old path 301s to new one so nothing breaks.
-- No shared layout between student and staff login (already true; verify).
+- **Public entry is `/student/login`.** `/` redirects to `/student/login`. Remove every visible link, button, or reference to staff/admin from public pages, footers, headers, and `index.tsx`.
+- **Delete `/staff/login`** (legacy) and any redirect that exposes it. Only `/admin/login` remains — unlinked, `<meta name="robots" content="noindex,nofollow">`, excluded from any sitemap.
+- **Audit login flow end-to-end** and fix:
+  - Student login: Student ID + password → resolve to synthetic email server-side → `signInWithPassword`. Verify the synthetic-email mapping matches what `enrollStudent` writes.
+  - Staff login: email + password.
+  - Session persistence, `onAuthStateChange` in `__root.tsx`, bearer attacher in `src/start.ts`.
+  - Role detection via `user_roles` + `has_role`/`is_staff`.
+  - Post-login redirect: students → `/student`, staff → role dashboard. Wrong-portal login is rejected with a clear message (student credentials on `/admin/login` → refused, and vice-versa).
+  - Initial admin seed still works; `change-password` flow forces rotation of temp passwords.
+  - RLS spot-check on `profiles`, `students`, `user_roles`.
 
-### 2. Student ID format change
-- Switch from `BIO-000042` sequential to `BIO-XXXXXX` with a Crockford-base32 alphabet (no confusable chars: no `I O 0 1`), generated server-side with collision retry.
-- Keep the existing `students.student_code` column; only the generator changes. Existing IDs stay valid.
+## Milestone 2 — Payments module
 
-### 3. QR code system
-- New `student_qr_tokens` table: `student_user_id`, `token` (opaque random 32-byte base64url), `active`, timestamps. Unique active token per student. Rotatable.
-- Server fn `issueStudentQrToken` (admin/secretary): generates + stores.
-- Server fn `resolveStudentQrToken` (staff): token → student summary (name, code, course, group, today's attendance, attendance %, payment status placeholder).
-- QR payload = the opaque token only. No PII, no student code embedded.
-- Client renders QR with `qrcode` npm package (SVG, printable).
+- Tables: `payments` (student, amount, currency, method, receipt_no, notes, operator, paid_at), `payment_plans` (monthly schedule per student), `discounts`.
+- Server fns: `recordPayment`, `listStudentPayments`, `getOutstandingBalance`, `monthlyStatus`, `revenueStats`.
+- Auto monthly status computed from plan + payments: Paid / Partial / Pending / Overdue / Cancelled.
+- Admin **Payments dashboard**: today/month/year revenue, pending list, charts (Recharts), CSV export.
+- Secretary "Register Payment" flow from reception + student profile.
+- Student profile shows history + balance.
 
-### 4. Enrollment summary + delivery
-- After `enrollStudent` succeeds, redirect to a summary screen showing: name, Student ID, temp password, QR (large, printable), course/group/year, and action buttons: Print QR Card, Download QR (PNG), Copy ID, Copy Password, Open Profile, WhatsApp handoff (prefilled Arabic message via `wa.me/?text=`), Print Credentials.
-- Temp password remains visible to admin/secretary on the student profile until the student changes it (already tracked via `profiles.must_change_password`); after change, show "تم التغيير" instead of the password.
+## Milestone 3 — Grades module
 
-### 5. Scanner page (`/secretary/scanner`, also linked from admin)
-- Uses `@zxing/browser` to read QR from: rear/front camera on mobile, webcam on desktop, and USB HID readers (which act as keyboards — a hidden input captures the string). Same page, auto-detects.
-- On scan → calls `resolveStudentQrToken` → broadcasts via Supabase Realtime `broadcast` channel `reception` with `{ student_user_id, scanned_at }`.
+- Tables: `assessments` (course, group, teacher, type: exam/quiz/assignment/homework/practical, max_score, date), `grades` (assessment, student, score, comment).
+- Server fns for teacher CRUD, student read-only.
+- Auto stats per student: average, highest, lowest, trend.
+- Teacher dashboard gets a Grades tab; student portal shows grades.
 
-### 6. Reception live view (`/secretary/reception`)
-- Subscribes to the `reception` broadcast channel. On event, fetches the student summary and opens a modal with: photo placeholder, name, ID, course, group, today's attendance, attendance %, average grade (placeholder), payment status (placeholder), latest payment (placeholder), and buttons: Confirm Attendance, Register Payment (disabled — later phase), View Profile, Close.
+## Milestone 4 — Student portal completion
 
-### 7. Attendance module
-- New tables:
-  - `attendance_settings` (singleton row): `mode` = `auto` | `manual`. Admin-editable.
-  - `attendance` : `student_user_id`, `course_id`, `group_id`, `teacher_id` (nullable), `attended_on` (date), `attended_at` (timestamptz), `status` (`present` | `late` | `absent`), `type` (`auto` | `manual`), `device` (`mobile` | `webcam` | `usb` | `manual`), `operator_id`. Unique index on `(student_user_id, attended_on)` blocks duplicates.
-  - RLS: staff read/insert; students read own only. No deletes for anyone (no DELETE policy).
-- On QR scan:
-  - `auto` mode → row inserted immediately by the resolver server fn.
-  - `manual` mode → "Confirm Attendance" button on reception popup inserts the row.
-- Attendance dashboard (`/admin/attendance` + link from secretary): today's count, week/month totals, absent list, late list, small chart (recharts is already in shadcn), per-group percentage.
+- `/student` shows: profile, avatar, QR, attendance %, attendance history, grades, average, payment history, outstanding balance, course, group, year, notifications.
+- Student can update password + avatar only (Supabase Storage bucket `avatars`, RLS scoped to `auth.uid()`).
+- Nothing else editable.
 
-### 8. Speed polish
-- Preload `/secretary/students/new` and `/secretary/scanner` on secretary dashboard hover.
-- Reception page auto-focuses hidden input on mount for USB scanner use.
+## Milestone 5 — Search + Notifications + Student Card
+
+- Global staff search: student ID, name, phone, parent phone, course, group, QR token → instant results (debounced, indexed).
+- Notifications table + realtime channel; toasts + bell menu; auto entries for attendance, payments, enrollment, errors.
+- Printable **Student Card** (photo, name, ID, QR, course, group, logo) with A6 print CSS.
+
+## Milestone 6 — Admin dashboard + Reports
+
+- Redesigned admin home: KPIs (students, attendance %, revenue, pending), latest registrations, latest payments, charts, quick actions.
+- Reports page: attendance / payments / students / teachers / grades / financial. Export CSV + Excel (`xlsx`) + PDF (`jspdf` + `jspdf-autotable`).
+
+## Milestone 7 — Secretary dashboard rework
+
+- First screen = 4 huge tiles: Scan QR, Register Student, Search Student, Payments. Keyboard shortcuts, one-click flow.
+
+## Milestone 8 — Perf, security, QA audit
+
+- Query indexes for search + attendance + payments.
+- Route-level code-splitting review, image lazy-load, memoization on heavy lists.
+- Security scan (`security--run_security_scan`), fix all findings, tighten RLS, verify QR token flow, add input validation with zod on every server fn.
+- Manual QA pass: every route, CRUD, realtime, RTL, mobile viewport. Fix all issues.
 
 ## Technical notes
 
-- **New deps**: `qrcode` (SVG QR render), `@zxing/browser` (+ `@zxing/library`) for camera scanning. Both are pure JS, Worker-safe (only used in the browser anyway).
-- **Realtime**: use Supabase `broadcast` channel (not postgres_changes) — lower latency, no table churn, no RLS lookup on every event. Both scanner and reception subscribe.
-- **QR token security**: opaque 32-byte random, stored server-side; resolver requires staff role. Rotating a token invalidates the old QR (needed if a phone is lost). No student PII in the QR itself.
-- **Attendance uniqueness**: enforced by unique index, not app logic, so races can't create dupes. Insert catches unique-violation and returns "already recorded today".
-- **Grants**: every new public table gets explicit GRANTs alongside the RLS policies (per project convention).
+- New deps: `xlsx`, `jspdf`, `jspdf-autotable`, `recharts` (probably already present).
+- New Supabase storage bucket: `avatars` (public read, owner write via RLS).
+- All new tables get GRANTs + RLS in the same migration; staff via `is_staff`, students via `auth.uid()`.
+- No breaking changes to existing tables; only additive columns if needed.
 
-## Explicitly out of scope this phase
-- Payments module (Phase 5)
-- Grades module (Phase 6)
-- Profile pictures (Phase 6)
-- Reports/analytics/activity-log UI (Phase 7)
-- Actual WhatsApp API send — only prefilled `wa.me` handoff for now, as requested
+## Questions before I start
 
-## Rollout order inside the phase
-1. Migration: rename generator, QR tokens table, attendance tables + settings, RLS + grants.
-2. Server fns: token issue/resolve, attendance insert, settings read/write.
-3. Enrollment summary page + WhatsApp handoff.
-4. Scanner page.
-5. Reception page + realtime.
-6. Attendance dashboard.
-7. `/admin/login` rename + redirect.
+1. **Confirm milestone order** above, or tell me to reprioritize (e.g., Payments before Student Portal completion, or Auth-only this turn).
+2. **Payment currency** — single currency (EGP?) or multi-currency support?
+3. **Monthly fee source** — per-course fixed amount, per-group, or per-student override?
+4. **Receipt numbers** — sequential per year (e.g. `2026-000123`) or free-form?
 
-Confirm and I'll start with the migration.
+Reply with answers (or "proceed with defaults: EGP, per-course fee, sequential yearly receipts, do milestones in order") and I'll start executing Milestone 1 immediately.

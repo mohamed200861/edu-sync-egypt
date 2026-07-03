@@ -14,7 +14,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentLoginRouteImport } from './routes/student.login'
-import { Route as StaffLoginRouteImport } from './routes/staff.login'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AuthenticatedTeacherIndexRouteImport } from './routes/_authenticated/teacher/index'
 import { Route as AuthenticatedStudentIndexRouteImport } from './routes/_authenticated/student/index'
@@ -59,11 +58,6 @@ const IndexRoute = IndexRouteImport.update({
 const StudentLoginRoute = StudentLoginRouteImport.update({
   id: '/student/login',
   path: '/student/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StaffLoginRoute = StaffLoginRouteImport.update({
-  id: '/staff/login',
-  path: '/staff/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -195,7 +189,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/change-password': typeof ChangePasswordRoute
   '/admin/login': typeof AdminLoginRoute
-  '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
@@ -223,7 +216,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/change-password': typeof ChangePasswordRoute
   '/admin/login': typeof AdminLoginRoute
-  '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
@@ -253,7 +245,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/change-password': typeof ChangePasswordRoute
   '/admin/login': typeof AdminLoginRoute
-  '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/_authenticated/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
@@ -283,7 +274,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/change-password'
     | '/admin/login'
-    | '/staff/login'
     | '/student/login'
     | '/admin/academic-years'
     | '/admin/attendance'
@@ -311,7 +301,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/change-password'
     | '/admin/login'
-    | '/staff/login'
     | '/student/login'
     | '/admin/academic-years'
     | '/admin/attendance'
@@ -340,7 +329,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/change-password'
     | '/admin/login'
-    | '/staff/login'
     | '/student/login'
     | '/_authenticated/admin/academic-years'
     | '/_authenticated/admin/attendance'
@@ -370,7 +358,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ChangePasswordRoute: typeof ChangePasswordRoute
   AdminLoginRoute: typeof AdminLoginRoute
-  StaffLoginRoute: typeof StaffLoginRoute
   StudentLoginRoute: typeof StudentLoginRoute
 }
 
@@ -409,13 +396,6 @@ declare module '@tanstack/react-router' {
       path: '/student/login'
       fullPath: '/student/login'
       preLoaderRoute: typeof StudentLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/staff/login': {
-      id: '/staff/login'
-      path: '/staff/login'
-      fullPath: '/staff/login'
-      preLoaderRoute: typeof StaffLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -636,19 +616,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ChangePasswordRoute: ChangePasswordRoute,
   AdminLoginRoute: AdminLoginRoute,
-  StaffLoginRoute: StaffLoginRoute,
   StudentLoginRoute: StudentLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,9 @@ export const Route = createFileRoute("/admin/login")({
   },
   head: () => ({
     meta: [
-      { title: "دخول الموظفين — مركز الأحياء التعليمي" },
-      { name: "description", content: "بوابة تسجيل دخول المشرفين والسكرتارية والمعلمين." },
+      { title: "دخول الموظفين" },
+      { name: "robots", content: "noindex, nofollow, noarchive" },
+      { name: "googlebot", content: "noindex, nofollow" },
     ],
   }),
   component: AdminLoginPage,
@@ -77,10 +78,7 @@ function AdminLoginPage() {
               <ShieldCheck className="size-5 text-primary" /> تسجيل دخول الموظفين
             </CardTitle>
             <CardDescription>
-              للمشرفين والسكرتارية والمعلمين فقط.{" "}
-              <Link to="/student/login" className="text-primary underline underline-offset-4">
-                هل أنت طالب؟ اضغط هنا
-              </Link>
+              للمشرفين والسكرتارية والمعلمين فقط.
             </CardDescription>
           </CardHeader>
           <CardContent>
