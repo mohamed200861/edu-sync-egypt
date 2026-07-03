@@ -1,17 +1,25 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { enrollStudent, type EnrollResult } from "@/lib/enrollment.functions";
+import { QrDisplay } from "@/components/qr-display";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Copy, CheckCircle2 } from "lucide-react";
+import { Copy, CheckCircle2, MessageCircle, UserRound, RefreshCw } from "lucide-react";
 
-export function EnrollmentForm() {
+export function EnrollmentForm({
+  profileHrefBase = "/admin/students",
+}: { profileHrefBase?: string } = {}) {
   const enrollFn = useServerFn(enrollStudent);
+  const [currentName, setCurrentName] = useState("");
+  const [currentCourse, setCurrentCourse] = useState<string | null>(null);
+  const [currentGroup, setCurrentGroup] = useState<string | null>(null);
+  const [currentYear, setCurrentYear] = useState<string | null>(null);
   const [form, setForm] = useState({
     full_name: "",
     date_of_birth: "",
