@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminAcademicYearsRouteImport } from './routes/_authenticated/admin/academic-years'
 
 const StudentLoginRoute = StudentLoginRouteImport.update({
   id: '/student-login',
@@ -39,17 +40,25 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminAcademicYearsRoute =
+  AuthenticatedAdminAcademicYearsRouteImport.update({
+    id: '/admin/academic-years',
+    path: '/admin/academic-years',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/student-login': typeof StudentLoginRoute
+  '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/student-login': typeof StudentLoginRoute
+  '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -58,19 +67,26 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/student-login': typeof StudentLoginRoute
+  '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/student-login' | '/admin/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/student-login'
+    | '/admin/academic-years'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/student-login' | '/admin'
+  to: '/' | '/auth' | '/student-login' | '/admin/academic-years' | '/admin'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/student-login'
+    | '/_authenticated/admin/academic-years'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -118,14 +134,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/academic-years': {
+      id: '/_authenticated/admin/academic-years'
+      path: '/admin/academic-years'
+      fullPath: '/admin/academic-years'
+      preLoaderRoute: typeof AuthenticatedAdminAcademicYearsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminAcademicYearsRoute: typeof AuthenticatedAdminAcademicYearsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminAcademicYearsRoute: AuthenticatedAdminAcademicYearsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
