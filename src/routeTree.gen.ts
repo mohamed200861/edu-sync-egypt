@@ -20,6 +20,8 @@ import { Route as AuthenticatedTeacherIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedStudentIndexRouteImport } from './routes/_authenticated/student/index'
 import { Route as AuthenticatedSecretaryIndexRouteImport } from './routes/_authenticated/secretary/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedSecretaryScannerRouteImport } from './routes/_authenticated/secretary/scanner'
+import { Route as AuthenticatedSecretaryReceptionRouteImport } from './routes/_authenticated/secretary/reception'
 import { Route as AuthenticatedSecretaryGroupsRouteImport } from './routes/_authenticated/secretary/groups'
 import { Route as AuthenticatedAdminTeachersRouteImport } from './routes/_authenticated/admin/teachers'
 import { Route as AuthenticatedAdminStudentsRouteImport } from './routes/_authenticated/admin/students'
@@ -27,6 +29,7 @@ import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminSecretariesRouteImport } from './routes/_authenticated/admin/secretaries'
 import { Route as AuthenticatedAdminGroupsRouteImport } from './routes/_authenticated/admin/groups'
 import { Route as AuthenticatedAdminCoursesRouteImport } from './routes/_authenticated/admin/courses'
+import { Route as AuthenticatedAdminAttendanceRouteImport } from './routes/_authenticated/admin/attendance'
 import { Route as AuthenticatedAdminAcademicYearsRouteImport } from './routes/_authenticated/admin/academic-years'
 import { Route as AuthenticatedSecretaryStudentsNewRouteImport } from './routes/_authenticated/secretary/students/new'
 import { Route as AuthenticatedAdminStudentsNewRouteImport } from './routes/_authenticated/admin/students/new'
@@ -88,6 +91,18 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSecretaryScannerRoute =
+  AuthenticatedSecretaryScannerRouteImport.update({
+    id: '/secretary/scanner',
+    path: '/secretary/scanner',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSecretaryReceptionRoute =
+  AuthenticatedSecretaryReceptionRouteImport.update({
+    id: '/secretary/reception',
+    path: '/secretary/reception',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSecretaryGroupsRoute =
   AuthenticatedSecretaryGroupsRouteImport.update({
     id: '/secretary/groups',
@@ -129,6 +144,12 @@ const AuthenticatedAdminCoursesRoute =
     path: '/admin/courses',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminAttendanceRoute =
+  AuthenticatedAdminAttendanceRouteImport.update({
+    id: '/admin/attendance',
+    path: '/admin/attendance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminAcademicYearsRoute =
   AuthenticatedAdminAcademicYearsRouteImport.update({
     id: '/admin/academic-years',
@@ -156,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
+  '/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
   '/admin/courses': typeof AuthenticatedAdminCoursesRoute
   '/admin/groups': typeof AuthenticatedAdminGroupsRoute
   '/admin/secretaries': typeof AuthenticatedAdminSecretariesRoute
@@ -163,6 +185,8 @@ export interface FileRoutesByFullPath {
   '/admin/students': typeof AuthenticatedAdminStudentsRouteWithChildren
   '/admin/teachers': typeof AuthenticatedAdminTeachersRoute
   '/secretary/groups': typeof AuthenticatedSecretaryGroupsRoute
+  '/secretary/reception': typeof AuthenticatedSecretaryReceptionRoute
+  '/secretary/scanner': typeof AuthenticatedSecretaryScannerRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/secretary/': typeof AuthenticatedSecretaryIndexRoute
   '/student/': typeof AuthenticatedStudentIndexRoute
@@ -178,6 +202,7 @@ export interface FileRoutesByTo {
   '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
+  '/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
   '/admin/courses': typeof AuthenticatedAdminCoursesRoute
   '/admin/groups': typeof AuthenticatedAdminGroupsRoute
   '/admin/secretaries': typeof AuthenticatedAdminSecretariesRoute
@@ -185,6 +210,8 @@ export interface FileRoutesByTo {
   '/admin/students': typeof AuthenticatedAdminStudentsRouteWithChildren
   '/admin/teachers': typeof AuthenticatedAdminTeachersRoute
   '/secretary/groups': typeof AuthenticatedSecretaryGroupsRoute
+  '/secretary/reception': typeof AuthenticatedSecretaryReceptionRoute
+  '/secretary/scanner': typeof AuthenticatedSecretaryScannerRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/secretary': typeof AuthenticatedSecretaryIndexRoute
   '/student': typeof AuthenticatedStudentIndexRoute
@@ -202,6 +229,7 @@ export interface FileRoutesById {
   '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
+  '/_authenticated/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
   '/_authenticated/admin/courses': typeof AuthenticatedAdminCoursesRoute
   '/_authenticated/admin/groups': typeof AuthenticatedAdminGroupsRoute
   '/_authenticated/admin/secretaries': typeof AuthenticatedAdminSecretariesRoute
@@ -209,6 +237,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/students': typeof AuthenticatedAdminStudentsRouteWithChildren
   '/_authenticated/admin/teachers': typeof AuthenticatedAdminTeachersRoute
   '/_authenticated/secretary/groups': typeof AuthenticatedSecretaryGroupsRoute
+  '/_authenticated/secretary/reception': typeof AuthenticatedSecretaryReceptionRoute
+  '/_authenticated/secretary/scanner': typeof AuthenticatedSecretaryScannerRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/secretary/': typeof AuthenticatedSecretaryIndexRoute
   '/_authenticated/student/': typeof AuthenticatedStudentIndexRoute
@@ -226,6 +256,7 @@ export interface FileRouteTypes {
     | '/staff/login'
     | '/student/login'
     | '/admin/academic-years'
+    | '/admin/attendance'
     | '/admin/courses'
     | '/admin/groups'
     | '/admin/secretaries'
@@ -233,6 +264,8 @@ export interface FileRouteTypes {
     | '/admin/students'
     | '/admin/teachers'
     | '/secretary/groups'
+    | '/secretary/reception'
+    | '/secretary/scanner'
     | '/admin/'
     | '/secretary/'
     | '/student/'
@@ -248,6 +281,7 @@ export interface FileRouteTypes {
     | '/staff/login'
     | '/student/login'
     | '/admin/academic-years'
+    | '/admin/attendance'
     | '/admin/courses'
     | '/admin/groups'
     | '/admin/secretaries'
@@ -255,6 +289,8 @@ export interface FileRouteTypes {
     | '/admin/students'
     | '/admin/teachers'
     | '/secretary/groups'
+    | '/secretary/reception'
+    | '/secretary/scanner'
     | '/admin'
     | '/secretary'
     | '/student'
@@ -271,6 +307,7 @@ export interface FileRouteTypes {
     | '/staff/login'
     | '/student/login'
     | '/_authenticated/admin/academic-years'
+    | '/_authenticated/admin/attendance'
     | '/_authenticated/admin/courses'
     | '/_authenticated/admin/groups'
     | '/_authenticated/admin/secretaries'
@@ -278,6 +315,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/students'
     | '/_authenticated/admin/teachers'
     | '/_authenticated/secretary/groups'
+    | '/_authenticated/secretary/reception'
+    | '/_authenticated/secretary/scanner'
     | '/_authenticated/admin/'
     | '/_authenticated/secretary/'
     | '/_authenticated/student/'
@@ -375,6 +414,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/secretary/scanner': {
+      id: '/_authenticated/secretary/scanner'
+      path: '/secretary/scanner'
+      fullPath: '/secretary/scanner'
+      preLoaderRoute: typeof AuthenticatedSecretaryScannerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/secretary/reception': {
+      id: '/_authenticated/secretary/reception'
+      path: '/secretary/reception'
+      fullPath: '/secretary/reception'
+      preLoaderRoute: typeof AuthenticatedSecretaryReceptionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/secretary/groups': {
       id: '/_authenticated/secretary/groups'
       path: '/secretary/groups'
@@ -424,6 +477,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCoursesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/attendance': {
+      id: '/_authenticated/admin/attendance'
+      path: '/admin/attendance'
+      fullPath: '/admin/attendance'
+      preLoaderRoute: typeof AuthenticatedAdminAttendanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/academic-years': {
       id: '/_authenticated/admin/academic-years'
       path: '/admin/academic-years'
@@ -464,6 +524,7 @@ const AuthenticatedAdminStudentsRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAcademicYearsRoute: typeof AuthenticatedAdminAcademicYearsRoute
+  AuthenticatedAdminAttendanceRoute: typeof AuthenticatedAdminAttendanceRoute
   AuthenticatedAdminCoursesRoute: typeof AuthenticatedAdminCoursesRoute
   AuthenticatedAdminGroupsRoute: typeof AuthenticatedAdminGroupsRoute
   AuthenticatedAdminSecretariesRoute: typeof AuthenticatedAdminSecretariesRoute
@@ -471,6 +532,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminStudentsRoute: typeof AuthenticatedAdminStudentsRouteWithChildren
   AuthenticatedAdminTeachersRoute: typeof AuthenticatedAdminTeachersRoute
   AuthenticatedSecretaryGroupsRoute: typeof AuthenticatedSecretaryGroupsRoute
+  AuthenticatedSecretaryReceptionRoute: typeof AuthenticatedSecretaryReceptionRoute
+  AuthenticatedSecretaryScannerRoute: typeof AuthenticatedSecretaryScannerRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedSecretaryIndexRoute: typeof AuthenticatedSecretaryIndexRoute
   AuthenticatedStudentIndexRoute: typeof AuthenticatedStudentIndexRoute
@@ -480,6 +543,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAcademicYearsRoute: AuthenticatedAdminAcademicYearsRoute,
+  AuthenticatedAdminAttendanceRoute: AuthenticatedAdminAttendanceRoute,
   AuthenticatedAdminCoursesRoute: AuthenticatedAdminCoursesRoute,
   AuthenticatedAdminGroupsRoute: AuthenticatedAdminGroupsRoute,
   AuthenticatedAdminSecretariesRoute: AuthenticatedAdminSecretariesRoute,
@@ -487,6 +551,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminStudentsRoute: AuthenticatedAdminStudentsRouteWithChildren,
   AuthenticatedAdminTeachersRoute: AuthenticatedAdminTeachersRoute,
   AuthenticatedSecretaryGroupsRoute: AuthenticatedSecretaryGroupsRoute,
+  AuthenticatedSecretaryReceptionRoute: AuthenticatedSecretaryReceptionRoute,
+  AuthenticatedSecretaryScannerRoute: AuthenticatedSecretaryScannerRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedSecretaryIndexRoute: AuthenticatedSecretaryIndexRoute,
   AuthenticatedStudentIndexRoute: AuthenticatedStudentIndexRoute,
