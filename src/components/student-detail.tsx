@@ -148,7 +148,10 @@ export function StudentDetail({ userId }: { userId: string }) {
             </Table>
           </CardContent>
         </Card>
+
+        <PaymentPanel studentUserId={userId} canEdit />
       </div>
+
 
       <div className="space-y-4">
         <Card>
