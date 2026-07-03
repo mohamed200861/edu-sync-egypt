@@ -5,7 +5,7 @@ import { EnrollmentForm } from "@/components/enrollment-form";
 export const Route = createFileRoute("/_authenticated/secretary/students/new")({
   component: () => (
     <AppShell title="تسجيل طالب جديد">
-      <EnrollmentForm />
+      <EnrollmentForm profileHrefBase="/secretary/students" />
     </AppShell>
   ),
 });
