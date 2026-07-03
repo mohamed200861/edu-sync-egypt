@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { StudentsList } from "@/components/students-list";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Layers, QrCode, Radio } from "lucide-react";
+import { UserPlus, Layers, QrCode, Radio, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/secretary/")({
   component: SecretaryDashboard,
@@ -44,6 +44,17 @@ function SecretaryDashboard() {
           </CardHeader>
           <CardContent>
             <Link to="/secretary/reception"><Button variant="outline" className="w-full">فتح الاستقبال</Button></Link>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/40 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="size-5 text-primary" /> المدفوعات
+            </CardTitle>
+            <CardDescription>الإيصالات وتسجيل الدفع.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to="/secretary/payments"><Button className="w-full">فتح</Button></Link>
           </CardContent>
         </Card>
         <Card>

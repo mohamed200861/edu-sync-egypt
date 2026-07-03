@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { issueStudentQrToken } from "@/lib/qr.functions";
 import { QrDisplay } from "@/components/qr-display";
+import { PaymentPanel } from "@/components/payment-panel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -147,7 +148,10 @@ export function StudentDetail({ userId }: { userId: string }) {
             </Table>
           </CardContent>
         </Card>
+
+        <PaymentPanel studentUserId={userId} canEdit />
       </div>
+
 
       <div className="space-y-4">
         <Card>

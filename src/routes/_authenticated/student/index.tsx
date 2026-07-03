@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentPanel } from "@/components/payment-panel";
 
 export const Route = createFileRoute("/_authenticated/student/")({
   component: StudentHome,
@@ -40,7 +41,7 @@ function StudentHome() {
 
   return (
     <AppShell title="بوابة الطالب">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 mb-6">
         <Card>
           <CardHeader>
             <CardDescription>تم تسجيل الدخول باسم</CardDescription>
@@ -76,9 +77,9 @@ function StudentHome() {
           </CardContent>
         </Card>
       </div>
-      <p className="mt-6 text-sm text-muted-foreground">
-        الحضور والدرجات والمدفوعات ورمز QR سيتم إضافتها في المراحل القادمة.
-      </p>
+
+      {user?.id && <PaymentPanel studentUserId={user.id} canEdit={false} />}
     </AppShell>
   );
 }
+

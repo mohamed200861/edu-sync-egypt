@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, GraduationCap, Calendar, BookOpen, Layers, Shield, QrCode, Radio, ClipboardCheck } from "lucide-react";
+import { Users, GraduationCap, Calendar, BookOpen, Layers, Shield, QrCode, Radio, ClipboardCheck, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminDashboard,
@@ -49,6 +49,7 @@ function AdminDashboard() {
     { to: "/secretary/scanner", title: "ماسح QR", desc: "تسجيل الحضور بمسح الرمز", Icon: QrCode },
     { to: "/secretary/reception", title: "شاشة الاستقبال", desc: "عرض المسح مباشرة", Icon: Radio },
     { to: "/admin/attendance", title: "الحضور", desc: "لوحة الحضور والوضع (تلقائي/يدوي)", Icon: ClipboardCheck },
+    { to: "/admin/payments", title: "المدفوعات", desc: "الرسوم، الإيصالات، لوحة الإيرادات", Icon: Wallet },
     { to: "/admin/students", title: "الطلاب", desc: "التسجيل والتعديل والعرض", Icon: Users },
     { to: "/admin/staff", title: "دعوات الموظفين", desc: "الدعوة بالبريد (للمشرف فقط)", Icon: Shield },
     { to: "/admin/teachers", title: "المعلمون", desc: "إدارة الكادر التعليمي", Icon: GraduationCap },
@@ -91,7 +92,7 @@ function AdminDashboard() {
       </div>
 
       <p className="mt-8 text-xs text-muted-foreground">
-        المدفوعات والدرجات والصور الشخصية ستُضاف في المراحل القادمة.
+        الدرجات والصور الشخصية ستُضاف في المراحل القادمة.
       </p>
     </AppShell>
   );
