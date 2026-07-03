@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminGroupsRouteImport } from './routes/_authenticated/admin/groups'
 import { Route as AuthenticatedAdminCoursesRouteImport } from './routes/_authenticated/admin/courses'
 import { Route as AuthenticatedAdminAcademicYearsRouteImport } from './routes/_authenticated/admin/academic-years'
 
@@ -41,6 +42,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminGroupsRoute =
+  AuthenticatedAdminGroupsRouteImport.update({
+    id: '/admin/groups',
+    path: '/admin/groups',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminCoursesRoute =
   AuthenticatedAdminCoursesRouteImport.update({
     id: '/admin/courses',
@@ -60,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/student-login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/courses': typeof AuthenticatedAdminCoursesRoute
+  '/admin/groups': typeof AuthenticatedAdminGroupsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +76,7 @@ export interface FileRoutesByTo {
   '/student-login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/courses': typeof AuthenticatedAdminCoursesRoute
+  '/admin/groups': typeof AuthenticatedAdminGroupsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -78,6 +87,7 @@ export interface FileRoutesById {
   '/student-login': typeof StudentLoginRoute
   '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/_authenticated/admin/courses': typeof AuthenticatedAdminCoursesRoute
+  '/_authenticated/admin/groups': typeof AuthenticatedAdminGroupsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/student-login'
     | '/admin/academic-years'
     | '/admin/courses'
+    | '/admin/groups'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/student-login'
     | '/admin/academic-years'
     | '/admin/courses'
+    | '/admin/groups'
     | '/admin'
   id:
     | '__root__'
@@ -105,6 +117,7 @@ export interface FileRouteTypes {
     | '/student-login'
     | '/_authenticated/admin/academic-years'
     | '/_authenticated/admin/courses'
+    | '/_authenticated/admin/groups'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/groups': {
+      id: '/_authenticated/admin/groups'
+      path: '/admin/groups'
+      fullPath: '/admin/groups'
+      preLoaderRoute: typeof AuthenticatedAdminGroupsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/courses': {
       id: '/_authenticated/admin/courses'
       path: '/admin/courses'
@@ -172,12 +192,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAcademicYearsRoute: typeof AuthenticatedAdminAcademicYearsRoute
   AuthenticatedAdminCoursesRoute: typeof AuthenticatedAdminCoursesRoute
+  AuthenticatedAdminGroupsRoute: typeof AuthenticatedAdminGroupsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAcademicYearsRoute: AuthenticatedAdminAcademicYearsRoute,
   AuthenticatedAdminCoursesRoute: AuthenticatedAdminCoursesRoute,
+  AuthenticatedAdminGroupsRoute: AuthenticatedAdminGroupsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
