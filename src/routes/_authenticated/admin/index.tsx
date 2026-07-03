@@ -47,6 +47,7 @@ function AdminDashboard() {
   type NavItem = { to: string; title: string; desc: string; Icon: typeof Users };
   const links: NavItem[] = [
     { to: "/admin/students", title: "Students", desc: "Enroll, edit, view", Icon: Users },
+    { to: "/admin/staff", title: "Staff invitations", desc: "Invite by email (admin only)", Icon: Shield },
     { to: "/admin/teachers", title: "Teachers", desc: "Manage teaching staff", Icon: GraduationCap },
     { to: "/admin/secretaries", title: "Secretaries", desc: "Manage reception staff", Icon: Shield },
     { to: "/admin/academic-years", title: "Academic years", desc: "School year setup", Icon: Calendar },
