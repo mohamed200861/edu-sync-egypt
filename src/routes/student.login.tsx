@@ -77,10 +77,7 @@ function StudentLoginPage() {
           <CardHeader>
             <CardTitle>الدخول برقم الطالب</CardTitle>
             <CardDescription>
-              أدخل رقم الطالب (مثال: BIO-000042).{" "}
-              <Link to="/staff/login" className="text-primary underline underline-offset-4">
-                بوابة الموظفين
-              </Link>
+              أدخل رقم الطالب (مثال: BIO-XXXXXX) وكلمة المرور التي استلمتها من المركز.
             </CardDescription>
           </CardHeader>
           <CardContent>
