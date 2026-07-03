@@ -3,5 +3,9 @@ import { AppShell } from "@/components/app-shell";
 import { GroupsAdmin } from "@/components/catalog-admin";
 
 export const Route = createFileRoute("/_authenticated/secretary/groups")({
-  component: () => <AppShell title="Groups / Classes"><GroupsAdmin /></AppShell>,
+  component: () => (
+    <AppShell title="المجموعات / الفصول">
+      <GroupsAdmin />
+    </AppShell>
+  ),
 });

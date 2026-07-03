@@ -2,8 +2,15 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useAuth, primaryRole } from "@/hooks/use-auth";
+import { useAuth, primaryRole, type AppRole } from "@/hooks/use-auth";
 import { LogOut, LayoutDashboard, GraduationCap } from "lucide-react";
+
+const ROLE_LABEL_AR: Record<AppRole, string> = {
+  admin: "المشرف",
+  secretary: "السكرتارية",
+  teacher: "المعلم",
+  student: "الطالب",
+};
 
 export function AppShell({ children, title }: { children: ReactNode; title?: string }) {
   const { user, roles } = useAuth();
@@ -14,7 +21,8 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.invalidate();
-    navigate({ to: "/auth", replace: true });
+    const target = role === "student" ? "/student/login" : "/staff/login";
+    navigate({ to: target, replace: true });
   };
 
   const homeFor = (): string => {
@@ -32,20 +40,22 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
             <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground">
               <GraduationCap className="size-5" />
             </div>
-            <div className="leading-tight">
-              <div className="text-sm font-semibold">Biology Education Center</div>
-              <div className="text-xs text-muted-foreground">Student Management</div>
+            <div className="leading-tight text-start">
+              <div className="text-sm font-semibold">مركز الأحياء التعليمي</div>
+              <div className="text-xs text-muted-foreground">نظام إدارة الطلاب</div>
             </div>
           </Link>
           <div className="flex items-center gap-3">
             {role && (
-              <span className="hidden rounded-full bg-secondary px-3 py-1 text-xs font-medium capitalize text-secondary-foreground sm:inline">
-                {role}
+              <span className="hidden rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground sm:inline">
+                {ROLE_LABEL_AR[role]}
               </span>
             )}
-            <span className="hidden text-sm text-muted-foreground md:inline">{user?.email}</span>
+            <span className="hidden text-sm text-muted-foreground md:inline" dir="ltr">
+              {user?.email}
+            </span>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="me-2 size-4" /> Sign out
+              <LogOut className="ms-2 size-4" /> تسجيل الخروج
             </Button>
           </div>
         </div>

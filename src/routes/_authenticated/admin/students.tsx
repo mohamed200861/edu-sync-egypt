@@ -4,7 +4,7 @@ import { StudentsList } from "@/components/students-list";
 
 export const Route = createFileRoute("/_authenticated/admin/students")({
   component: () => (
-    <AppShell title="Students">
+    <AppShell title="الطلاب">
       <StudentsList newHref="/admin/students/new" />
     </AppShell>
   ),

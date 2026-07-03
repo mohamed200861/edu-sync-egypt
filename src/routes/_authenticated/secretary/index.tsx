@@ -11,24 +11,34 @@ export const Route = createFileRoute("/_authenticated/secretary/")({
 
 function SecretaryDashboard() {
   return (
-    <AppShell title="Secretary desk">
+    <AppShell title="مكتب السكرتارية">
       <div className="grid gap-4 sm:grid-cols-2 mb-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><UserPlus className="size-5 text-primary" /> Enroll student</CardTitle>
-            <CardDescription>Create a new student, generate ID & password.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserPlus className="size-5 text-primary" /> تسجيل طالب جديد
+            </CardTitle>
+            <CardDescription>إنشاء حساب طالب وتوليد رقم وكلمة مرور مؤقتة.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link to="/secretary/students/new"><Button className="w-full">Start enrollment</Button></Link>
+            <Link to="/secretary/students/new">
+              <Button className="w-full">بدء التسجيل</Button>
+            </Link>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Layers className="size-5 text-primary" /> Groups</CardTitle>
-            <CardDescription>Create and update class groups.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="size-5 text-primary" /> المجموعات
+            </CardTitle>
+            <CardDescription>إنشاء وتحديث المجموعات والفصول.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link to="/secretary/groups"><Button variant="outline" className="w-full">Manage groups</Button></Link>
+            <Link to="/secretary/groups">
+              <Button variant="outline" className="w-full">
+                إدارة المجموعات
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

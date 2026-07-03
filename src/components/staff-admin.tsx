@@ -15,8 +15,14 @@ import { useAuth } from "@/hooks/use-auth";
 
 type Role = "teacher" | "secretary" | "admin";
 
+const ROLE_LABEL: Record<Role, string> = {
+  admin: "مشرف",
+  secretary: "سكرتير(ة)",
+  teacher: "معلم(ة)",
+};
+
 interface Props {
-  role?: Role; // when set, list is scoped to this role and role select is hidden
+  role?: Role;
 }
 
 export function StaffAdmin({ role: fixedRole }: Props) {
@@ -32,7 +38,8 @@ export function StaffAdmin({ role: fixedRole }: Props) {
   }>({ email: "", full_name: "", role: fixedRole ?? "teacher", specialization: "" });
 
   const table = fixedRole === "teacher" ? "teachers" : fixedRole === "secretary" ? "secretaries" : null;
-  const label = fixedRole === "teacher" ? "Teacher" : fixedRole === "secretary" ? "Secretary" : "Staff";
+  const listTitle = fixedRole === "teacher" ? "المعلمون" : fixedRole === "secretary" ? "السكرتارية" : "الموظفون";
+  const singularLabel = fixedRole ? ROLE_LABEL[fixedRole] : "موظف";
 
   const { data } = useQuery({
     enabled: !!table,
@@ -63,7 +70,7 @@ export function StaffAdmin({ role: fixedRole }: Props) {
       });
     },
     onSuccess: () => {
-      toast.success(`Invitation email sent to ${form.email}`);
+      toast.success(`تم إرسال دعوة إلى ${form.email}`);
       setForm({ email: "", full_name: "", role: fixedRole ?? "teacher", specialization: "" });
       if (table) qc.invalidateQueries({ queryKey: [table] });
     },
@@ -74,21 +81,32 @@ export function StaffAdmin({ role: fixedRole }: Props) {
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       {table ? (
         <Card>
-          <CardHeader><CardTitle>{label}s</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>{listTitle}</CardTitle>
+          </CardHeader>
           <CardContent>
             <Table>
-              <TableHeader><TableRow>
-                <TableHead>Name</TableHead><TableHead>Created</TableHead>
-              </TableRow></TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>الاسم</TableHead>
+                  <TableHead>تاريخ الإنشاء</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {data?.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.full_name || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString("ar-EG")}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {data?.length === 0 && (
-                  <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No {label.toLowerCase()}s yet.</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center text-muted-foreground">
+                      لا يوجد سجلات.
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
@@ -97,50 +115,81 @@ export function StaffAdmin({ role: fixedRole }: Props) {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Staff invitations</CardTitle>
-            <CardDescription>Invite a new team member. They will receive an email to set their own password.</CardDescription>
+            <CardTitle>دعوات الموظفين</CardTitle>
+            <CardDescription>
+              ادعُ عضوًا جديدًا في الفريق — سيصله بريد إلكتروني لتعيين كلمة المرور الخاصة به.
+            </CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Only administrators can invite staff or assign the Administrator role.
+            فقط المشرفون يمكنهم دعوة الموظفين أو منح صلاحية المشرف.
           </CardContent>
         </Card>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Invite {fixedRole ? label.toLowerCase() : "staff"}</CardTitle>
-          <CardDescription>An email invitation is sent; they choose their password.</CardDescription>
+          <CardTitle>دعوة {singularLabel} جديد</CardTitle>
+          <CardDescription>سيصل إلى الشخص بريد دعوة ليختار كلمة المرور بنفسه.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); mutate.mutate(); }}>
-            <div className="space-y-1"><Label>Full name</Label>
-              <Input required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              mutate.mutate();
+            }}
+          >
+            <div className="space-y-1">
+              <Label>الاسم الكامل</Label>
+              <Input
+                required
+                value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+              />
             </div>
-            <div className="space-y-1"><Label>Email</Label>
-              <Input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <div className="space-y-1">
+              <Label>البريد الإلكتروني</Label>
+              <Input
+                type="email"
+                required
+                dir="ltr"
+                className="text-start"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
             </div>
             {!fixedRole && (
-              <div className="space-y-1"><Label>Role</Label>
-                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Role })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+              <div className="space-y-1">
+                <Label>الدور</Label>
+                <Select
+                  value={form.role}
+                  onValueChange={(v) => setForm({ ...form, role: v as Role })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="secretary">Secretary</SelectItem>
-                    <SelectItem value="teacher">Teacher</SelectItem>
-                    {isAdmin && <SelectItem value="admin">Administrator</SelectItem>}
+                    <SelectItem value="secretary">{ROLE_LABEL.secretary}</SelectItem>
+                    <SelectItem value="teacher">{ROLE_LABEL.teacher}</SelectItem>
+                    {isAdmin && <SelectItem value="admin">{ROLE_LABEL.admin}</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
             )}
             {form.role === "teacher" && (
-              <div className="space-y-1"><Label>Specialization</Label>
-                <Input value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} />
+              <div className="space-y-1">
+                <Label>التخصص</Label>
+                <Input
+                  value={form.specialization}
+                  onChange={(e) => setForm({ ...form, specialization: e.target.value })}
+                />
               </div>
             )}
             <Button type="submit" className="w-full" disabled={mutate.isPending || !isAdmin}>
-              <Mail className="me-2 size-4" /> {mutate.isPending ? "Sending..." : "Send invitation"}
+              <Mail className="ms-2 size-4" /> {mutate.isPending ? "جارٍ الإرسال..." : "إرسال الدعوة"}
             </Button>
             {!isAdmin && (
-              <p className="text-xs text-destructive">Only administrators can invite staff.</p>
+              <p className="text-xs text-destructive">فقط المشرفون يمكنهم دعوة موظفين.</p>
             )}
           </form>
         </CardContent>
