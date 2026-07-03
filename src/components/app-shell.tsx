@@ -21,7 +21,7 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.invalidate();
-    const target = role === "student" ? "/student/login" : "/staff/login";
+    const target = role === "student" ? "/student/login" : "/admin/login";
     navigate({ to: target, replace: true });
   };
 
