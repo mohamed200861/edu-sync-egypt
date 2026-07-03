@@ -335,6 +335,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
       next_student_code: { Args: never; Returns: string }
     }
     Enums: {
