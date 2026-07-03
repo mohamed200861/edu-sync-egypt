@@ -51,11 +51,8 @@ export const inviteStaff = createServerFn({ method: "POST" })
     return { user_id: newId };
   });
 
-const ClearMustChangeInput = z.object({}).optional();
-
 export const clearMustChangePassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(() => ClearMustChangeInput.parse({}))
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase

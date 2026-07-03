@@ -33,7 +33,7 @@ function ChangePasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password: pw });
       if (error) throw error;
-      await clearFlag({ data: undefined as never });
+      await clearFlag();
       toast.success("Password updated.");
       navigate({ to: "/" });
     } catch (err) {
