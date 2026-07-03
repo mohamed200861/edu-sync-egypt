@@ -174,7 +174,7 @@ export const setChargeStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { isAdmin } = await assertStaff(supabase, userId);
     if (!isAdmin) throw new Error("للمشرف فقط");
-    const patch: Record<string, unknown> = { status: data.status };
+    const patch: { status: "pending" | "cancelled"; notes?: string | null } = { status: data.status };
     if (data.notes !== undefined) patch.notes = data.notes;
     const { error } = await supabase
       .from("student_monthly_charges")
