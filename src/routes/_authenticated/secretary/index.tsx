@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { StudentsList } from "@/components/students-list";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Layers, QrCode, Radio } from "lucide-react";
+import { UserPlus, Layers, QrCode, Radio, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/secretary/")({
   component: SecretaryDashboard,
