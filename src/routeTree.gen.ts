@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminCoursesRouteImport } from './routes/_authenticated/admin/courses'
 import { Route as AuthenticatedAdminAcademicYearsRouteImport } from './routes/_authenticated/admin/academic-years'
 
 const StudentLoginRoute = StudentLoginRouteImport.update({
@@ -40,6 +41,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminCoursesRoute =
+  AuthenticatedAdminCoursesRouteImport.update({
+    id: '/admin/courses',
+    path: '/admin/courses',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminAcademicYearsRoute =
   AuthenticatedAdminAcademicYearsRouteImport.update({
     id: '/admin/academic-years',
@@ -52,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/student-login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
+  '/admin/courses': typeof AuthenticatedAdminCoursesRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -59,6 +67,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/student-login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
+  '/admin/courses': typeof AuthenticatedAdminCoursesRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -68,6 +77,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/student-login': typeof StudentLoginRoute
   '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
+  '/_authenticated/admin/courses': typeof AuthenticatedAdminCoursesRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -77,9 +87,16 @@ export interface FileRouteTypes {
     | '/auth'
     | '/student-login'
     | '/admin/academic-years'
+    | '/admin/courses'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/student-login' | '/admin/academic-years' | '/admin'
+  to:
+    | '/'
+    | '/auth'
+    | '/student-login'
+    | '/admin/academic-years'
+    | '/admin/courses'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -87,6 +104,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/student-login'
     | '/_authenticated/admin/academic-years'
+    | '/_authenticated/admin/courses'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -134,6 +152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/courses': {
+      id: '/_authenticated/admin/courses'
+      path: '/admin/courses'
+      fullPath: '/admin/courses'
+      preLoaderRoute: typeof AuthenticatedAdminCoursesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/academic-years': {
       id: '/_authenticated/admin/academic-years'
       path: '/admin/academic-years'
@@ -146,11 +171,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAcademicYearsRoute: typeof AuthenticatedAdminAcademicYearsRoute
+  AuthenticatedAdminCoursesRoute: typeof AuthenticatedAdminCoursesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAcademicYearsRoute: AuthenticatedAdminAcademicYearsRoute,
+  AuthenticatedAdminCoursesRoute: AuthenticatedAdminCoursesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
