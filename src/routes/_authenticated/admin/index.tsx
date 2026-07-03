@@ -92,7 +92,7 @@ function AdminDashboard() {
       </div>
 
       <p className="mt-8 text-xs text-muted-foreground">
-        المدفوعات والدرجات والصور الشخصية ستُضاف في المراحل القادمة.
+        الدرجات والصور الشخصية ستُضاف في المراحل القادمة.
       </p>
     </AppShell>
   );
