@@ -18,7 +18,9 @@ function StudentHome() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
-        .select("student_code, status, enrolled_at, courses(name), groups(name), academic_years(name)")
+        .select(
+          "student_code, status, enrolled_at, courses(name), groups(name), academic_years(name)",
+        )
         .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
@@ -29,34 +31,53 @@ function StudentHome() {
   const { data: profile } = useQuery({
     enabled: !!user?.id,
     queryKey: ["me-profile", user?.id],
-    queryFn: async () => (await supabase.from("profiles").select("full_name").eq("id", user!.id).maybeSingle()).data,
+    queryFn: async () =>
+      (await supabase.from("profiles").select("full_name").eq("id", user!.id).maybeSingle()).data,
   });
 
+  const statusLabel = (s?: string | null) =>
+    s === "active" ? "نشط" : s === "suspended" ? "موقوف" : s === "graduated" ? "متخرج" : s ?? "—";
+
   return (
-    <AppShell title="My portal">
+    <AppShell title="بوابة الطالب">
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardDescription>Signed in as</CardDescription>
+            <CardDescription>تم تسجيل الدخول باسم</CardDescription>
             <CardTitle>{profile?.full_name ?? user?.email}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">Student ID</div>
-            <div className="font-mono text-lg">{student?.student_code ?? "—"}</div>
+            <div className="text-sm text-muted-foreground">رقم الطالب</div>
+            <div className="font-mono text-lg" dir="ltr">
+              {student?.student_code ?? "—"}
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-base">Enrollment</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">بيانات التسجيل</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <div><span className="text-muted-foreground">Academic year:</span> {(student as { academic_years?: { name?: string } } | null)?.academic_years?.name ?? "—"}</div>
-            <div><span className="text-muted-foreground">Course:</span> {(student as { courses?: { name?: string } } | null)?.courses?.name ?? "—"}</div>
-            <div><span className="text-muted-foreground">Group:</span> {(student as { groups?: { name?: string } } | null)?.groups?.name ?? "—"}</div>
-            <div><span className="text-muted-foreground">Status:</span> {student?.status ?? "—"}</div>
+            <div>
+              <span className="text-muted-foreground">السنة الدراسية:</span>{" "}
+              {(student as { academic_years?: { name?: string } } | null)?.academic_years?.name ?? "—"}
+            </div>
+            <div>
+              <span className="text-muted-foreground">المقرر:</span>{" "}
+              {(student as { courses?: { name?: string } } | null)?.courses?.name ?? "—"}
+            </div>
+            <div>
+              <span className="text-muted-foreground">المجموعة:</span>{" "}
+              {(student as { groups?: { name?: string } } | null)?.groups?.name ?? "—"}
+            </div>
+            <div>
+              <span className="text-muted-foreground">الحالة:</span> {statusLabel(student?.status)}
+            </div>
           </CardContent>
         </Card>
       </div>
       <p className="mt-6 text-sm text-muted-foreground">
-        Attendance, grades, payments, and QR code arrive in later phases.
+        الحضور والدرجات والمدفوعات ورمز QR سيتم إضافتها في المراحل القادمة.
       </p>
     </AppShell>
   );

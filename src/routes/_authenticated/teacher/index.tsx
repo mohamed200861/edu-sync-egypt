@@ -4,8 +4,8 @@ import { StudentsList } from "@/components/students-list";
 
 export const Route = createFileRoute("/_authenticated/teacher/")({
   component: () => (
-    <AppShell title="Teacher">
-      <StudentsList newHref="/teacher" />
+    <AppShell title="بوابة المعلم">
+      <StudentsList newHref="/teacher" readOnly />
     </AppShell>
   ),
 });

@@ -28,15 +28,18 @@ export function EnrollmentForm() {
 
   const { data: years } = useQuery({
     queryKey: ["academic_years"],
-    queryFn: async () => (await supabase.from("academic_years").select("id,name").order("name")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("academic_years").select("id,name").order("name")).data ?? [],
   });
   const { data: courses } = useQuery({
     queryKey: ["courses-lite"],
-    queryFn: async () => (await supabase.from("courses").select("id,name").order("name")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("courses").select("id,name").order("name")).data ?? [],
   });
   const { data: groups } = useQuery({
     queryKey: ["groups-lite"],
-    queryFn: async () => (await supabase.from("groups").select("id,name").order("name")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("groups").select("id,name").order("name")).data ?? [],
   });
 
   const mutate = useMutation({
@@ -58,11 +61,18 @@ export function EnrollmentForm() {
     },
     onSuccess: (res) => {
       setResult(res);
-      toast.success(`Student ${res.student_code} enrolled`);
+      toast.success(`تم تسجيل الطالب ${res.student_code}`);
       setForm({
-        full_name: "", date_of_birth: "", gender: "", student_phone: "",
-        parent_phone: "", email: "", address: "",
-        academic_year_id: "", course_id: "", group_id: "",
+        full_name: "",
+        date_of_birth: "",
+        gender: "",
+        student_phone: "",
+        parent_phone: "",
+        email: "",
+        address: "",
+        academic_year_id: "",
+        course_id: "",
+        group_id: "",
       });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -73,78 +83,133 @@ export function EnrollmentForm() {
 
   const copy = async (text: string) => {
     await navigator.clipboard.writeText(text);
-    toast.success("Copied");
+    toast.success("تم النسخ");
   };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <Card>
         <CardHeader>
-          <CardTitle>Enroll new student</CardTitle>
-          <CardDescription>
-            A unique Student ID and a temporary password will be generated automatically.
-          </CardDescription>
+          <CardTitle>تسجيل طالب جديد</CardTitle>
+          <CardDescription>سيتم توليد رقم طالب فريد وكلمة مرور مؤقتة تلقائيًا.</CardDescription>
         </CardHeader>
         <CardContent>
           <form
             className="grid gap-4 sm:grid-cols-2"
-            onSubmit={(e) => { e.preventDefault(); if (form.full_name.trim()) mutate.mutate(); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (form.full_name.trim()) mutate.mutate();
+            }}
           >
             <div className="space-y-1 sm:col-span-2">
-              <Label>Full name *</Label>
-              <Input required value={form.full_name} onChange={(e) => set("full_name", e.target.value)} />
+              <Label>الاسم الكامل *</Label>
+              <Input
+                required
+                value={form.full_name}
+                onChange={(e) => set("full_name", e.target.value)}
+              />
             </div>
-            <div className="space-y-1"><Label>Date of birth</Label>
-              <Input type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
+            <div className="space-y-1">
+              <Label>تاريخ الميلاد</Label>
+              <Input
+                type="date"
+                value={form.date_of_birth}
+                onChange={(e) => set("date_of_birth", e.target.value)}
+              />
             </div>
-            <div className="space-y-1"><Label>Gender</Label>
+            <div className="space-y-1">
+              <Label>النوع</Label>
               <select
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={form.gender}
                 onChange={(e) => set("gender", e.target.value as typeof form.gender)}
               >
                 <option value="">—</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
+                <option value="male">ذكر</option>
+                <option value="female">أنثى</option>
+                <option value="other">آخر</option>
               </select>
             </div>
-            <div className="space-y-1"><Label>Student phone</Label>
-              <Input value={form.student_phone} onChange={(e) => set("student_phone", e.target.value)} />
+            <div className="space-y-1">
+              <Label>هاتف الطالب</Label>
+              <Input
+                dir="ltr"
+                className="text-start"
+                value={form.student_phone}
+                onChange={(e) => set("student_phone", e.target.value)}
+              />
             </div>
-            <div className="space-y-1"><Label>Parent phone</Label>
-              <Input value={form.parent_phone} onChange={(e) => set("parent_phone", e.target.value)} />
+            <div className="space-y-1">
+              <Label>هاتف ولي الأمر</Label>
+              <Input
+                dir="ltr"
+                className="text-start"
+                value={form.parent_phone}
+                onChange={(e) => set("parent_phone", e.target.value)}
+              />
             </div>
-            <div className="space-y-1 sm:col-span-2"><Label>Email (optional)</Label>
-              <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            <div className="space-y-1 sm:col-span-2">
+              <Label>البريد الإلكتروني (اختياري)</Label>
+              <Input
+                type="email"
+                dir="ltr"
+                className="text-start"
+                value={form.email}
+                onChange={(e) => set("email", e.target.value)}
+              />
             </div>
-            <div className="space-y-1 sm:col-span-2"><Label>Address (optional)</Label>
+            <div className="space-y-1 sm:col-span-2">
+              <Label>العنوان (اختياري)</Label>
               <Input value={form.address} onChange={(e) => set("address", e.target.value)} />
             </div>
-            <div className="space-y-1"><Label>Academic year</Label>
-              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.academic_year_id} onChange={(e) => set("academic_year_id", e.target.value)}>
+            <div className="space-y-1">
+              <Label>السنة الدراسية</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.academic_year_id}
+                onChange={(e) => set("academic_year_id", e.target.value)}
+              >
                 <option value="">—</option>
-                {years?.map((y) => <option key={y.id} value={y.id}>{y.name}</option>)}
+                {years?.map((y) => (
+                  <option key={y.id} value={y.id}>
+                    {y.name}
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="space-y-1"><Label>Course</Label>
-              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.course_id} onChange={(e) => set("course_id", e.target.value)}>
+            <div className="space-y-1">
+              <Label>المقرر</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.course_id}
+                onChange={(e) => set("course_id", e.target.value)}
+              >
                 <option value="">—</option>
-                {courses?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {courses?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="space-y-1 sm:col-span-2"><Label>Group / Class</Label>
-              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.group_id} onChange={(e) => set("group_id", e.target.value)}>
+            <div className="space-y-1 sm:col-span-2">
+              <Label>المجموعة / الفصل</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.group_id}
+                onChange={(e) => set("group_id", e.target.value)}
+              >
                 <option value="">—</option>
-                {groups?.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                {groups?.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={mutate.isPending} className="w-full sm:w-auto">
-                {mutate.isPending ? "Enrolling..." : "Confirm enrollment"}
+                {mutate.isPending ? "جارٍ التسجيل..." : "تأكيد التسجيل"}
               </Button>
             </div>
           </form>
@@ -155,27 +220,47 @@ export function EnrollmentForm() {
           <Card className="border-primary/40 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <CheckCircle2 className="size-5 text-primary" /> Enrollment confirmed
+                <CheckCircle2 className="size-5 text-primary" /> تم التسجيل بنجاح
               </CardTitle>
-              <CardDescription>Share these credentials with the student. Save them now.</CardDescription>
+              <CardDescription>
+                شارك هذه البيانات مع الطالب واحفظها الآن — لن تظهر مرة أخرى.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Student ID</Label>
+                <Label className="text-xs text-muted-foreground">رقم الطالب</Label>
                 <div className="mt-1 flex items-center gap-2">
-                  <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm">{result.student_code}</code>
-                  <Button size="icon" variant="outline" onClick={() => copy(result.student_code)}><Copy className="size-4" /></Button>
+                  <code
+                    className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm"
+                    dir="ltr"
+                  >
+                    {result.student_code}
+                  </code>
+                  <Button size="icon" variant="outline" onClick={() => copy(result.student_code)}>
+                    <Copy className="size-4" />
+                  </Button>
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Temporary password</Label>
+                <Label className="text-xs text-muted-foreground">كلمة المرور المؤقتة</Label>
                 <div className="mt-1 flex items-center gap-2">
-                  <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm">{result.temp_password}</code>
-                  <Button size="icon" variant="outline" onClick={() => copy(result.temp_password)}><Copy className="size-4" /></Button>
+                  <code
+                    className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm"
+                    dir="ltr"
+                  >
+                    {result.temp_password}
+                  </code>
+                  <Button size="icon" variant="outline" onClick={() => copy(result.temp_password)}>
+                    <Copy className="size-4" />
+                  </Button>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Student can sign in at <span className="font-mono">/student-login</span> using their Student ID and this password.
+                يستطيع الطالب تسجيل الدخول عبر{" "}
+                <span className="font-mono" dir="ltr">
+                  /student/login
+                </span>{" "}
+                باستخدام رقمه وكلمة المرور هذه.
               </p>
             </CardContent>
           </Card>

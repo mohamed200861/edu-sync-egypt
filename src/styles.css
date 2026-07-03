@@ -122,13 +122,27 @@
   --sidebar-ring: oklch(0.72 0.15 165);
 }
 
+@theme {
+  --font-sans:
+    "Cairo", "Tajawal", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    "Helvetica Neue", "Noto Sans Arabic", sans-serif;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
   }
+  html {
+    font-family: var(--font-sans);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: var(--font-sans);
+    font-feature-settings: "kern", "liga";
+  }
+  /* Arabic numerals feel more native for dates and IDs, but keep code readable */
+  code, pre, .font-mono {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
 }

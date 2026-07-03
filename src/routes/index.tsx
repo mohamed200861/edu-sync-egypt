@@ -5,7 +5,7 @@ export const Route = createFileRoute("/")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+    if (!data.user) throw redirect({ to: "/staff/login" });
 
     const { data: roles } = await supabase
       .from("user_roles")
@@ -15,7 +15,9 @@ export const Route = createFileRoute("/")({
     if (roleList.includes("admin")) throw redirect({ to: "/admin" });
     if (roleList.includes("secretary")) throw redirect({ to: "/secretary" });
     if (roleList.includes("teacher")) throw redirect({ to: "/teacher" });
-    throw redirect({ to: "/student" });
+    if (roleList.includes("student")) throw redirect({ to: "/student" });
+    // Signed in but no role assigned yet — send to staff login (they'll be told).
+    throw redirect({ to: "/staff/login" });
   },
   component: () => null,
 });

@@ -13,7 +13,7 @@ export const Route = createFileRoute("/change-password")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+    if (!data.user) throw redirect({ to: "/staff/login" });
   },
   component: ChangePasswordPage,
 });
@@ -27,17 +27,17 @@ function ChangePasswordPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (pw.length < 10) return toast.error("Use at least 10 characters.");
-    if (pw !== pw2) return toast.error("Passwords do not match.");
+    if (pw.length < 10) return toast.error("استخدم 10 أحرف على الأقل.");
+    if (pw !== pw2) return toast.error("كلمتا المرور غير متطابقتين.");
     setLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: pw });
       if (error) throw error;
       await clearFlag();
-      toast.success("Password updated.");
+      toast.success("تم تحديث كلمة المرور.");
       navigate({ to: "/" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update password");
+      toast.error(err instanceof Error ? err.message : "تعذّر تحديث كلمة المرور");
     } finally {
       setLoading(false);
     }
@@ -47,19 +47,37 @@ function ChangePasswordPage() {
     <div className="grid min-h-screen place-items-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Change your password</CardTitle>
-          <CardDescription>You must set a new password before continuing.</CardDescription>
+          <CardTitle>تغيير كلمة المرور</CardTitle>
+          <CardDescription>يجب عليك تعيين كلمة مرور جديدة قبل المتابعة.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-3" onSubmit={onSubmit}>
-            <div className="space-y-1"><Label>New password</Label>
-              <Input type="password" required minLength={10} value={pw} onChange={(e) => setPw(e.target.value)} />
+            <div className="space-y-1">
+              <Label>كلمة المرور الجديدة</Label>
+              <Input
+                type="password"
+                required
+                minLength={10}
+                dir="ltr"
+                className="text-start"
+                value={pw}
+                onChange={(e) => setPw(e.target.value)}
+              />
             </div>
-            <div className="space-y-1"><Label>Confirm new password</Label>
-              <Input type="password" required minLength={10} value={pw2} onChange={(e) => setPw2(e.target.value)} />
+            <div className="space-y-1">
+              <Label>تأكيد كلمة المرور</Label>
+              <Input
+                type="password"
+                required
+                minLength={10}
+                dir="ltr"
+                className="text-start"
+                value={pw2}
+                onChange={(e) => setPw2(e.target.value)}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Saving..." : "Update password"}
+              {loading ? "جارٍ الحفظ..." : "تحديث كلمة المرور"}
             </Button>
           </form>
         </CardContent>

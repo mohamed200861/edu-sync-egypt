@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.enforce_role_separation() FROM PUBLIC, anon, authenticated;

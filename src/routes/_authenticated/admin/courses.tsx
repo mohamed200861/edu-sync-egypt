@@ -3,5 +3,9 @@ import { AppShell } from "@/components/app-shell";
 import { CoursesAdmin } from "@/components/catalog-admin";
 
 export const Route = createFileRoute("/_authenticated/admin/courses")({
-  component: () => <AppShell title="Courses"><CoursesAdmin /></AppShell>,
+  component: () => (
+    <AppShell title="المقررات">
+      <CoursesAdmin />
+    </AppShell>
+  ),
 });

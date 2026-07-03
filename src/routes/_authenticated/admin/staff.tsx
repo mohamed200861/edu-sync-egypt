@@ -4,7 +4,7 @@ import { StaffAdmin } from "@/components/staff-admin";
 
 export const Route = createFileRoute("/_authenticated/admin/staff")({
   component: () => (
-    <AppShell title="Staff management">
+    <AppShell title="إدارة الموظفين">
       <StaffAdmin />
     </AppShell>
   ),

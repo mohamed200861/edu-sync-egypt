@@ -46,27 +46,27 @@ function AdminDashboard() {
 
   type NavItem = { to: string; title: string; desc: string; Icon: typeof Users };
   const links: NavItem[] = [
-    { to: "/admin/students", title: "Students", desc: "Enroll, edit, view", Icon: Users },
-    { to: "/admin/staff", title: "Staff invitations", desc: "Invite by email (admin only)", Icon: Shield },
-    { to: "/admin/teachers", title: "Teachers", desc: "Manage teaching staff", Icon: GraduationCap },
-    { to: "/admin/secretaries", title: "Secretaries", desc: "Manage reception staff", Icon: Shield },
-    { to: "/admin/academic-years", title: "Academic years", desc: "School year setup", Icon: Calendar },
-    { to: "/admin/courses", title: "Courses", desc: "Subjects offered", Icon: BookOpen },
-    { to: "/admin/groups", title: "Groups / Classes", desc: "Class sections", Icon: Layers },
+    { to: "/admin/students", title: "الطلاب", desc: "التسجيل والتعديل والعرض", Icon: Users },
+    { to: "/admin/staff", title: "دعوات الموظفين", desc: "الدعوة بالبريد (للمشرف فقط)", Icon: Shield },
+    { to: "/admin/teachers", title: "المعلمون", desc: "إدارة الكادر التعليمي", Icon: GraduationCap },
+    { to: "/admin/secretaries", title: "السكرتارية", desc: "إدارة موظفي الاستقبال", Icon: Shield },
+    { to: "/admin/academic-years", title: "السنوات الدراسية", desc: "إعداد السنوات الأكاديمية", Icon: Calendar },
+    { to: "/admin/courses", title: "المقررات", desc: "المواد المقدمة", Icon: BookOpen },
+    { to: "/admin/groups", title: "المجموعات / الفصول", desc: "أقسام الفصول", Icon: Layers },
   ];
 
   return (
-    <AppShell title="Admin dashboard">
+    <AppShell title="لوحة المشرف">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {stat("Students", counts?.students ?? 0, Users)}
-        {stat("Teachers", counts?.teachers ?? 0, GraduationCap)}
-        {stat("Secretaries", counts?.secretaries ?? 0, Shield)}
-        {stat("Courses", counts?.courses ?? 0, BookOpen)}
-        {stat("Groups", counts?.groups ?? 0, Layers)}
-        {stat("Academic years", counts?.years ?? 0, Calendar)}
+        {stat("الطلاب", counts?.students ?? 0, Users)}
+        {stat("المعلمون", counts?.teachers ?? 0, GraduationCap)}
+        {stat("السكرتارية", counts?.secretaries ?? 0, Shield)}
+        {stat("المقررات", counts?.courses ?? 0, BookOpen)}
+        {stat("المجموعات", counts?.groups ?? 0, Layers)}
+        {stat("السنوات الدراسية", counts?.years ?? 0, Calendar)}
       </div>
 
-      <h2 className="mt-10 mb-4 text-lg font-semibold">Manage</h2>
+      <h2 className="mt-10 mb-4 text-lg font-semibold">الإدارة</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {links.map((l) => (
           <Link key={l.to} to={l.to}>
@@ -88,7 +88,7 @@ function AdminDashboard() {
       </div>
 
       <p className="mt-8 text-xs text-muted-foreground">
-        Today&apos;s attendance and revenue widgets arrive in Phase 2 / Phase 3.
+        وحدات الحضور والمدفوعات والدرجات ستُضاف في المراحل القادمة.
       </p>
     </AppShell>
   );
