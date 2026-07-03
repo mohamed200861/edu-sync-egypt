@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StudentLoginRouteImport } from './routes/student-login'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -31,11 +30,6 @@ import { Route as AuthenticatedAdminAcademicYearsRouteImport } from './routes/_a
 import { Route as AuthenticatedSecretaryStudentsNewRouteImport } from './routes/_authenticated/secretary/students/new'
 import { Route as AuthenticatedAdminStudentsNewRouteImport } from './routes/_authenticated/admin/students/new'
 
-const StudentLoginRoute = StudentLoginRouteImport.update({
-  id: '/student-login',
-  path: '/student-login',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ChangePasswordRoute = ChangePasswordRouteImport.update({
   id: '/change-password',
   path: '/change-password',
@@ -152,7 +146,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/change-password': typeof ChangePasswordRoute
-  '/student-login': typeof StudentLoginRoute
   '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
@@ -174,7 +167,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/change-password': typeof ChangePasswordRoute
-  '/student-login': typeof StudentLoginRoute
   '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
@@ -198,7 +190,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/change-password': typeof ChangePasswordRoute
-  '/student-login': typeof StudentLoginRoute
   '/staff/login': typeof StaffLoginRoute
   '/student/login': typeof StudentLoginRoute
   '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
@@ -222,7 +213,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/change-password'
-    | '/student-login'
     | '/staff/login'
     | '/student/login'
     | '/admin/academic-years'
@@ -244,7 +234,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/change-password'
-    | '/student-login'
     | '/staff/login'
     | '/student/login'
     | '/admin/academic-years'
@@ -267,7 +256,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/change-password'
-    | '/student-login'
     | '/staff/login'
     | '/student/login'
     | '/_authenticated/admin/academic-years'
@@ -291,20 +279,12 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ChangePasswordRoute: typeof ChangePasswordRoute
-  StudentLoginRoute: typeof StudentLoginRoute
   StaffLoginRoute: typeof StaffLoginRoute
   StudentLoginRoute: typeof StudentLoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/student-login': {
-      id: '/student-login'
-      path: '/student-login'
-      fullPath: '/student-login'
-      preLoaderRoute: typeof StudentLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/change-password': {
       id: '/change-password'
       path: '/change-password'
@@ -503,7 +483,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ChangePasswordRoute: ChangePasswordRoute,
-  StudentLoginRoute: StudentLoginRoute,
   StaffLoginRoute: StaffLoginRoute,
   StudentLoginRoute: StudentLoginRoute,
 }
