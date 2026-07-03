@@ -77,6 +77,87 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance: {
+        Row: {
+          attended_at: string
+          attended_on: string
+          course_id: string | null
+          created_at: string
+          device: string
+          group_id: string | null
+          id: string
+          operator_id: string | null
+          status: string
+          student_user_id: string
+          teacher_id: string | null
+          type: string
+        }
+        Insert: {
+          attended_at?: string
+          attended_on?: string
+          course_id?: string | null
+          created_at?: string
+          device?: string
+          group_id?: string | null
+          id?: string
+          operator_id?: string | null
+          status?: string
+          student_user_id: string
+          teacher_id?: string | null
+          type?: string
+        }
+        Update: {
+          attended_at?: string
+          attended_on?: string
+          course_id?: string | null
+          created_at?: string
+          device?: string
+          group_id?: string | null
+          id?: string
+          operator_id?: string | null
+          status?: string
+          student_user_id?: string
+          teacher_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_settings: {
+        Row: {
+          id: boolean
+          mode: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           academic_year_id: string | null
@@ -199,6 +280,36 @@ export type Database = {
           hire_date?: string | null
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      student_qr_tokens: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          issued_by: string | null
+          revoked_at: string | null
+          student_user_id: string
+          token: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          revoked_at?: string | null
+          student_user_id: string
+          token: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          revoked_at?: string | null
+          student_user_id?: string
+          token?: string
         }
         Relationships: []
       }
