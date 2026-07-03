@@ -17,9 +17,19 @@ const EnrollInput = z.object({
 });
 
 export type EnrollResult = {
+  student_user_id: string;
   student_code: string;
   temp_password: string;
+  qr_token: string;
 };
+
+function makeQrToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
 
 export const enrollStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -95,7 +105,16 @@ export const enrollStudent = createServerFn({ method: "POST" })
       throw new Error(stuErr.message);
     }
 
-    // 6. Activity log (best-effort)
+    // 6. Issue initial QR token
+    const qrToken = makeQrToken();
+    await supabaseAdmin.from("student_qr_tokens").insert({
+      student_user_id: newUserId,
+      token: qrToken,
+      active: true,
+      issued_by: userId,
+    });
+
+    // 7. Activity log (best-effort)
     await supabaseAdmin.from("activity_log").insert({
       user_id: userId,
       action: "student.enroll",
@@ -104,5 +123,10 @@ export const enrollStudent = createServerFn({ method: "POST" })
       metadata: { student_code: studentCode, full_name: data.full_name },
     });
 
-    return { student_code: studentCode, temp_password: tempPassword };
+    return {
+      student_user_id: newUserId,
+      student_code: studentCode,
+      temp_password: tempPassword,
+      qr_token: qrToken,
+    };
   });

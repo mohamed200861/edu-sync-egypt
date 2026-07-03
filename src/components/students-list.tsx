@@ -102,7 +102,17 @@ export function StudentsList({
                   {s.student_code}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {(s as { profiles?: { full_name?: string } }).profiles?.full_name ?? "—"}
+                  {s.user_id && !readOnly ? (
+                    <Link
+                      to={newHref.replace(/\/new$/, "/$id")}
+                      params={{ id: s.user_id }}
+                      className="text-primary hover:underline"
+                    >
+                      {(s as { profiles?: { full_name?: string } }).profiles?.full_name ?? "—"}
+                    </Link>
+                  ) : (
+                    (s as { profiles?: { full_name?: string } }).profiles?.full_name ?? "—"
+                  )}
                 </TableCell>
                 <TableCell>{(s as { courses?: { name?: string } }).courses?.name ?? "—"}</TableCell>
                 <TableCell>{(s as { groups?: { name?: string } }).groups?.name ?? "—"}</TableCell>

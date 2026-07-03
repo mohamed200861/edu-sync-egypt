@@ -1,110 +1,73 @@
-# Phase 1 — Foundations
+## Scope
 
-Auth, roles, core entities, enrollment flow, and admin dashboard v1 for the Biology Education Center SMS. Later phases (QR/attendance, payments, grades, WhatsApp, reports) are out of scope for this plan.
+This message bundles what we previously separated as Phase 3 (QR + Scanner + Realtime) and Phase 4 (Attendance), plus a few smaller items (rename staff login to `/admin/login`, harder-to-guess Student IDs, rich enrollment summary + WhatsApp handoff, credentials always visible on student profile). I'll ship it as one phase since the pieces are tightly coupled — the scanner is useless without QR, the reception popup is useless without realtime, and both feed the attendance table.
 
-## What you'll be able to do after Phase 1
+Payments, grades, profile pictures, reports/analytics stay for later phases as previously agreed.
 
-- Sign up / log in as Administrator, Secretary, Teacher (real email) or Student (Student ID + password).
-- Administrator manages: Academic Years, Courses, Groups, Teachers, Secretaries, Students, and can reset any user's password.
-- Secretary enrolls a new Student — in one atomic action, the system creates the auth user, assigns the Student role, generates a unique `BIO-000001`-style Student ID, sets a temporary password, and links the student to an Academic Year + Course + Group.
-- Teacher can search and view students (read-only in Phase 1 — grades/notes come in Phase 4).
-- Student can log in and see a stub portal (full portal in Phase 4). Can change their profile picture and password.
-- Admin dashboard v1: total students, today's attendance placeholder (real once Phase 2 lands), quick links to management screens.
+## What gets built
 
-Explicitly deferred: QR codes, attendance scanning, payments, grades, WhatsApp, PDF certificates, reports, Arabic strings, i18n library, activity log UI (schema included, UI in Phase 6).
+### 1. Auth surface cleanup
+- Rename `/staff/login` → `/admin/login`. Old path 301s to new one so nothing breaks.
+- No shared layout between student and staff login (already true; verify).
 
-## Architecture decisions (from our Q&A)
+### 2. Student ID format change
+- Switch from `BIO-000042` sequential to `BIO-XXXXXX` with a Crockford-base32 alphabet (no confusable chars: no `I O 0 1`), generated server-side with collision retry.
+- Keep the existing `students.student_code` column; only the generator changes. Existing IDs stay valid.
 
-- **Backend**: Lovable Cloud (Supabase under the hood) — Postgres, Auth, RLS, Storage for profile pics.
-- **Student login**: synthetic email `{studentid}@students.local` behind the scenes. Login form for students asks for Student ID + password; login form for staff asks for real email + password. Two entry points, one Supabase Auth backend.
-- **Admin bootstrap**: manual. First signup is a normal user; you run a one-line SQL snippet in the Cloud SQL editor to grant admin. No hardcoded admin email in migrations.
-- **RTL-safe layout only**: use Tailwind logical utilities (`ms-4`/`me-4`/`ps-2`/`pe-2`, `text-start`/`text-end`) throughout, wrap the app in a `<html dir>` context. No i18next in Phase 1 — strings stay English, extraction happens in Phase 6.
-- **Roles in a separate `user_roles` table** with a `has_role()` security-definer function — required pattern for Lovable Cloud to avoid RLS recursion and privilege-escalation risk.
+### 3. QR code system
+- New `student_qr_tokens` table: `student_user_id`, `token` (opaque random 32-byte base64url), `active`, timestamps. Unique active token per student. Rotatable.
+- Server fn `issueStudentQrToken` (admin/secretary): generates + stores.
+- Server fn `resolveStudentQrToken` (staff): token → student summary (name, code, course, group, today's attendance, attendance %, payment status placeholder).
+- QR payload = the opaque token only. No PII, no student code embedded.
+- Client renders QR with `qrcode` npm package (SVG, printable).
 
-## Data model
+### 4. Enrollment summary + delivery
+- After `enrollStudent` succeeds, redirect to a summary screen showing: name, Student ID, temp password, QR (large, printable), course/group/year, and action buttons: Print QR Card, Download QR (PNG), Copy ID, Copy Password, Open Profile, WhatsApp handoff (prefilled Arabic message via `wa.me/?text=`), Print Credentials.
+- Temp password remains visible to admin/secretary on the student profile until the student changes it (already tracked via `profiles.must_change_password`); after change, show "تم التغيير" instead of the password.
 
-New tables in the `public` schema (each with grants + RLS + policies):
+### 5. Scanner page (`/secretary/scanner`, also linked from admin)
+- Uses `@zxing/browser` to read QR from: rear/front camera on mobile, webcam on desktop, and USB HID readers (which act as keyboards — a hidden input captures the string). Same page, auto-detects.
+- On scan → calls `resolveStudentQrToken` → broadcasts via Supabase Realtime `broadcast` channel `reception` with `{ student_user_id, scanned_at }`.
 
-```text
-app_role                enum: admin | secretary | teacher | student
-user_roles              (id, user_id → auth.users, role app_role, unique(user_id, role))
-profiles                (id = auth.users.id, full_name, avatar_url, phone, created_at)
-                        — one row per auth user, auto-created by trigger on signup
-academic_years          (id, name e.g. "2025-2026", start_date, end_date, is_active)
-courses                 (id, name, description, academic_year_id)
-groups                  (id, name e.g. "Class 1A", course_id, academic_year_id, capacity)
-teachers                (id, user_id → auth.users, specialization, hire_date)
-secretaries             (id, user_id → auth.users, hire_date)
-students                (id, user_id → auth.users, student_code "BIO-000001" unique,
-                         date_of_birth, gender, student_phone, parent_phone,
-                         email, address, academic_year_id, course_id, group_id,
-                         status active|suspended, enrolled_at, enrolled_by)
-student_code_seq        Postgres sequence, used by a SECURITY DEFINER function
-                         `next_student_code()` returning "BIO-000001" formatted string
-activity_log            (id, user_id, action, entity_type, entity_id, metadata jsonb,
-                         ip_address, user_agent, created_at)
-                        — schema only; UI in Phase 6
-```
+### 6. Reception live view (`/secretary/reception`)
+- Subscribes to the `reception` broadcast channel. On event, fetches the student summary and opens a modal with: photo placeholder, name, ID, course, group, today's attendance, attendance %, average grade (placeholder), payment status (placeholder), latest payment (placeholder), and buttons: Confirm Attendance, Register Payment (disabled — later phase), View Profile, Close.
 
-**RLS policy summary** (every user-facing table gets `GRANT SELECT/INSERT/UPDATE/DELETE ... TO authenticated` + `GRANT ALL TO service_role`, then RLS enabled):
+### 7. Attendance module
+- New tables:
+  - `attendance_settings` (singleton row): `mode` = `auto` | `manual`. Admin-editable.
+  - `attendance` : `student_user_id`, `course_id`, `group_id`, `teacher_id` (nullable), `attended_on` (date), `attended_at` (timestamptz), `status` (`present` | `late` | `absent`), `type` (`auto` | `manual`), `device` (`mobile` | `webcam` | `usb` | `manual`), `operator_id`. Unique index on `(student_user_id, attended_on)` blocks duplicates.
+  - RLS: staff read/insert; students read own only. No deletes for anyone (no DELETE policy).
+- On QR scan:
+  - `auto` mode → row inserted immediately by the resolver server fn.
+  - `manual` mode → "Confirm Attendance" button on reception popup inserts the row.
+- Attendance dashboard (`/admin/attendance` + link from secretary): today's count, week/month totals, absent list, late list, small chart (recharts is already in shadcn), per-group percentage.
 
-- `user_roles`: read own; only admins can insert/update/delete (via `has_role(auth.uid(), 'admin')`).
-- `profiles`: read own; admins read all; user updates own; admins update any.
-- `academic_years`, `courses`, `groups`: all authenticated read; only admins write.
-- `teachers`, `secretaries`: read all (authenticated); only admins write.
-- `students`: admins + secretaries read all; teachers read all; a student reads only their own row (`user_id = auth.uid()`). Insert/update: admins + secretaries. Delete: admins only.
-- `activity_log`: insert allowed for any authenticated user (their own actions); read only by admins.
-
-## Auth flow
-
-- **Staff signup/login** (`/auth`): real email + password. On signup, a trigger creates a `profiles` row. Role is assigned later by an admin (no self-service role assignment).
-- **Student login** (`/student-login`): Student ID + password. Frontend converts `BIO-000123` → `bio-000123@students.local` before calling `supabase.auth.signInWithPassword`.
-- **Enrollment (server function)**: `createServerFn` middleware `requireSupabaseAuth` + `has_role(...,'secretary' OR 'admin')` check. Inside handler, `supabaseAdmin` (loaded via `await import(...)`) does the privileged sequence:
-  1. `next_student_code()` → `BIO-000042`
-  2. `auth.admin.createUser({ email: 'bio-000042@students.local', password: <temp>, email_confirm: true })`
-  3. Insert into `profiles`, `students`, `user_roles` (role=student)
-  4. Return `{ student_code, temp_password }` to the secretary UI to display/copy
-  All wrapped in a transaction pattern — if any step fails, the auth user is deleted to keep state consistent.
-- **Admin bootstrap**: after your own signup, run in Cloud SQL editor:
-  ```sql
-  insert into public.user_roles (user_id, role)
-  values ((select id from auth.users where email='you@example.com'), 'admin');
-  ```
-
-## Routing (TanStack Start)
-
-Public:
-
-- `/auth` — staff email/password (sign in + sign up)
-- `/student-login` — Student ID + password
-
-Protected under `src/routes/_authenticated/`:
-
-- `/` after auth redirects by role: admin → `/admin`, secretary → `/secretary`, teacher → `/teacher`, student → `/student`
-- `/admin` — dashboard v1 (KPI cards + quick links)
-- `/admin/students`, `/admin/students/new`, `/admin/students/$id`
-- `/admin/teachers`, `/admin/secretaries`
-- `/admin/courses`, `/admin/groups`, `/admin/academic-years`
-- `/secretary` — dashboard (enroll, search students)
-- `/secretary/students/new` — enrollment wizard (shared component with admin)
-- `/teacher` — student search (read-only)
-- `/student` — stub portal (profile, change avatar/password)
-
-Role gates in each subtree via `beforeLoad` checking `has_role` server-side.
-
-## UI
-
-- shadcn/ui components already in the template. Design system tokens in `src/styles.css` — I'll add a subtle biology-themed accent (deep teal/emerald primary, warm neutral surfaces) with light + dark mode both wired.
-- All spacing/margins use logical utilities so a future `dir="rtl"` toggle Just Works.
-- Forms via `react-hook-form` + `zod` (already patterns supported by shadcn `form.tsx`).
+### 8. Speed polish
+- Preload `/secretary/students/new` and `/secretary/scanner` on secretary dashboard hover.
+- Reception page auto-focuses hidden input on mount for USB scanner use.
 
 ## Technical notes
 
-- Uses the TanStack Start + Supabase integration patterns already in the project template (`_authenticated` layout is integration-managed, `requireSupabaseAuth` middleware, `attachSupabaseAuth` client-side).
-- Enrollment logic lives in `src/lib/enrollment.functions.ts` (client-safe path, server-only imports inside `.handler()`).
-- Storage bucket `avatars` (public read, owner write) for profile pictures.
-- No Edge Functions yet — everything runs via `createServerFn`. Edge Functions come in Phase 5 for WhatsApp only.
+- **New deps**: `qrcode` (SVG QR render), `@zxing/browser` (+ `@zxing/library`) for camera scanning. Both are pure JS, Worker-safe (only used in the browser anyway).
+- **Realtime**: use Supabase `broadcast` channel (not postgres_changes) — lower latency, no table churn, no RLS lookup on every event. Both scanner and reception subscribe.
+- **QR token security**: opaque 32-byte random, stored server-side; resolver requires staff role. Rotating a token invalidates the old QR (needed if a phone is lost). No student PII in the QR itself.
+- **Attendance uniqueness**: enforced by unique index, not app logic, so races can't create dupes. Insert catches unique-violation and returns "already recorded today".
+- **Grants**: every new public table gets explicit GRANTs alongside the RLS policies (per project convention).
 
-## Out of scope (later phases)
+## Explicitly out of scope this phase
+- Payments module (Phase 5)
+- Grades module (Phase 6)
+- Profile pictures (Phase 6)
+- Reports/analytics/activity-log UI (Phase 7)
+- Actual WhatsApp API send — only prefilled `wa.me` handoff for now, as requested
 
-QR generation & scanning, attendance, payments, grades, WhatsApp, PDF certificates, analytics charts, activity-log UI, Arabic strings + i18next, PWA manifest polish. Schema fields those phases need will be added in their own migrations, not now.               Two fixes before you build this: 1) Add an RLS policy on `profiles` allowing secretary/teacher/admin (via `has_role`) to read profiles of users linked to `students`, `teachers`, or `secretaries` rows they're authorized to view — right now only "read own" + "admin reads all" is defined, which blocks staff from seeing student/teacher names. 2) Give `secretary` insert/update rights on `groups` (not just admin) — secretaries need to create classes/groups per the spec, only `courses` should stay admin-only.
+## Rollout order inside the phase
+1. Migration: rename generator, QR tokens table, attendance tables + settings, RLS + grants.
+2. Server fns: token issue/resolve, attendance insert, settings read/write.
+3. Enrollment summary page + WhatsApp handoff.
+4. Scanner page.
+5. Reception page + realtime.
+6. Attendance dashboard.
+7. `/admin/login` rename + redirect.
+
+Confirm and I'll start with the migration.

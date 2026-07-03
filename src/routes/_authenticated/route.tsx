@@ -8,9 +8,8 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      // Send to the correct login based on where they were trying to go.
       const staffAttempt = !location.pathname.startsWith("/student");
-      throw redirect({ to: staffAttempt ? "/staff/login" : "/student/login" });
+      throw redirect({ to: staffAttempt ? "/admin/login" : "/student/login" });
     }
 
     const { data: prof } = await supabase

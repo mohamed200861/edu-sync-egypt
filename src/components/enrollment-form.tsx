@@ -1,17 +1,25 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { enrollStudent, type EnrollResult } from "@/lib/enrollment.functions";
+import { QrDisplay } from "@/components/qr-display";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Copy, CheckCircle2 } from "lucide-react";
+import { Copy, CheckCircle2, MessageCircle, UserRound, RefreshCw } from "lucide-react";
 
-export function EnrollmentForm() {
+export function EnrollmentForm({
+  profileHrefBase = "/admin/students",
+}: { profileHrefBase?: string } = {}) {
   const enrollFn = useServerFn(enrollStudent);
+  const [currentName, setCurrentName] = useState("");
+  const [currentCourse, setCurrentCourse] = useState<string | null>(null);
+  const [currentGroup, setCurrentGroup] = useState<string | null>(null);
+  const [currentYear, setCurrentYear] = useState<string | null>(null);
   const [form, setForm] = useState({
     full_name: "",
     date_of_birth: "",
@@ -61,6 +69,10 @@ export function EnrollmentForm() {
     },
     onSuccess: (res) => {
       setResult(res);
+      setCurrentName(form.full_name.trim());
+      setCurrentCourse(courses?.find((c) => c.id === form.course_id)?.name ?? null);
+      setCurrentGroup(groups?.find((g) => g.id === form.group_id)?.name ?? null);
+      setCurrentYear(years?.find((y) => y.id === form.academic_year_id)?.name ?? null);
       toast.success(`تم تسجيل الطالب ${res.student_code}`);
       setForm({
         full_name: "",
@@ -223,17 +235,29 @@ export function EnrollmentForm() {
                 <CheckCircle2 className="size-5 text-primary" /> تم التسجيل بنجاح
               </CardTitle>
               <CardDescription>
-                شارك هذه البيانات مع الطالب واحفظها الآن — لن تظهر مرة أخرى.
+                احفظ هذه البيانات الآن وسلّمها للطالب. يمكن الرجوع لرمز QR وكلمة المرور
+                من ملف الطالب.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
+              <div className="text-sm">
+                <div className="font-semibold">{currentName}</div>
+                <div className="text-xs text-muted-foreground">
+                  {[currentCourse, currentGroup, currentYear].filter(Boolean).join(" • ") || "—"}
+                </div>
+              </div>
+
+              <QrDisplay
+                token={result.qr_token}
+                studentCode={result.student_code}
+                studentName={currentName}
+                size={200}
+              />
+
               <div>
                 <Label className="text-xs text-muted-foreground">رقم الطالب</Label>
                 <div className="mt-1 flex items-center gap-2">
-                  <code
-                    className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm"
-                    dir="ltr"
-                  >
+                  <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm" dir="ltr">
                     {result.student_code}
                   </code>
                   <Button size="icon" variant="outline" onClick={() => copy(result.student_code)}>
@@ -244,10 +268,7 @@ export function EnrollmentForm() {
               <div>
                 <Label className="text-xs text-muted-foreground">كلمة المرور المؤقتة</Label>
                 <div className="mt-1 flex items-center gap-2">
-                  <code
-                    className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm"
-                    dir="ltr"
-                  >
+                  <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm" dir="ltr">
                     {result.temp_password}
                   </code>
                   <Button size="icon" variant="outline" onClick={() => copy(result.temp_password)}>
@@ -255,13 +276,45 @@ export function EnrollmentForm() {
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                يستطيع الطالب تسجيل الدخول عبر{" "}
-                <span className="font-mono" dir="ltr">
-                  /student/login
-                </span>{" "}
-                باستخدام رقمه وكلمة المرور هذه.
-              </p>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const loginUrl = `${window.location.origin}/student/login`;
+                    const msg =
+                      `مرحباً،\n\nتم تسجيلك بنجاح في مركز الأحياء.\n\n` +
+                      `رقم الطالب:\n${result.student_code}\n\n` +
+                      `كلمة المرور المؤقتة:\n${result.temp_password}\n\n` +
+                      `رابط بوابة الطالب:\n${loginUrl}\n\n` +
+                      `يرجى تغيير كلمة المرور بعد أول تسجيل دخول.`;
+                    const phone = form.parent_phone || form.student_phone || "";
+                    const digits = phone.replace(/\D/g, "");
+                    const url = digits
+                      ? `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`
+                      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                    window.open(url, "_blank");
+                  }}
+                >
+                  <MessageCircle className="ms-2 size-4" /> واتساب
+                </Button>
+                <Link to={`${profileHrefBase}/$id`} params={{ id: result.student_user_id }}>
+                  <Button variant="outline" className="w-full">
+                    <UserRound className="ms-2 size-4" /> ملف الطالب
+                  </Button>
+                </Link>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setResult(null);
+                }}
+              >
+                <RefreshCw className="ms-2 size-4" /> تسجيل طالب آخر
+              </Button>
             </CardContent>
           </Card>
         )}
