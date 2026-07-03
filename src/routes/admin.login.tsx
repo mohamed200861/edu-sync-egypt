@@ -78,10 +78,7 @@ function AdminLoginPage() {
               <ShieldCheck className="size-5 text-primary" /> تسجيل دخول الموظفين
             </CardTitle>
             <CardDescription>
-              للمشرفين والسكرتارية والمعلمين فقط.{" "}
-              <Link to="/student/login" className="text-primary underline underline-offset-4">
-                هل أنت طالب؟ اضغط هنا
-              </Link>
+              للمشرفين والسكرتارية والمعلمين فقط.
             </CardDescription>
           </CardHeader>
           <CardContent>
