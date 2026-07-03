@@ -69,6 +69,10 @@ export function EnrollmentForm({
     },
     onSuccess: (res) => {
       setResult(res);
+      setCurrentName(form.full_name.trim());
+      setCurrentCourse(courses?.find((c) => c.id === form.course_id)?.name ?? null);
+      setCurrentGroup(groups?.find((g) => g.id === form.group_id)?.name ?? null);
+      setCurrentYear(years?.find((y) => y.id === form.academic_year_id)?.name ?? null);
       toast.success(`تم تسجيل الطالب ${res.student_code}`);
       setForm({
         full_name: "",
