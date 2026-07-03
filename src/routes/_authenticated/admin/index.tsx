@@ -49,6 +49,7 @@ function AdminDashboard() {
     { to: "/secretary/scanner", title: "ماسح QR", desc: "تسجيل الحضور بمسح الرمز", Icon: QrCode },
     { to: "/secretary/reception", title: "شاشة الاستقبال", desc: "عرض المسح مباشرة", Icon: Radio },
     { to: "/admin/attendance", title: "الحضور", desc: "لوحة الحضور والوضع (تلقائي/يدوي)", Icon: ClipboardCheck },
+    { to: "/admin/payments", title: "المدفوعات", desc: "الرسوم، الإيصالات، لوحة الإيرادات", Icon: Wallet },
     { to: "/admin/students", title: "الطلاب", desc: "التسجيل والتعديل والعرض", Icon: Users },
     { to: "/admin/staff", title: "دعوات الموظفين", desc: "الدعوة بالبريد (للمشرف فقط)", Icon: Shield },
     { to: "/admin/teachers", title: "المعلمون", desc: "إدارة الكادر التعليمي", Icon: GraduationCap },
