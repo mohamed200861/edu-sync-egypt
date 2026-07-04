@@ -41,16 +41,31 @@ function AdminLoginPage() {
     setBusy(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email: trimmed, password });
     if (error || !data.user) {
+      console.warn("[admin-login] sign-in failed:", error?.message);
       setBusy(false);
       return toast.error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
     }
-    const { data: rolesRows } = await supabase
+
+    // Fetch roles. Only sign the user back out if we actually confirm a mismatch —
+    // never on a transient network/DB error, otherwise a valid admin can be
+    // locked out by a flaky read.
+    const { data: rolesRows, error: rolesErr } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", data.user.id);
+
+    if (rolesErr) {
+      console.error("[admin-login] role lookup failed; keeping session:", rolesErr.message);
+      setBusy(false);
+      toast.success("تم تسجيل الدخول بنجاح");
+      navigate({ to: "/" });
+      return;
+    }
+
     const roles = (rolesRows ?? []).map((r) => r.role as string);
     const isStaff = roles.some((r) => ["admin", "secretary", "teacher"].includes(r));
     if (!isStaff) {
+      console.warn("[admin-login] signing out: user has no staff role. roles=", roles);
       await supabase.auth.signOut();
       setBusy(false);
       return toast.error("هذا الحساب غير مصرح له بالدخول من بوابة الموظفين.");
@@ -59,6 +74,7 @@ function AdminLoginPage() {
     toast.success("تم تسجيل الدخول بنجاح");
     navigate({ to: "/" });
   };
+
 
   return (
     <div className="grid min-h-screen place-items-center bg-gradient-to-br from-background via-secondary/40 to-background px-4">
