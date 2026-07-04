@@ -45,16 +45,26 @@ function StudentLoginPage() {
     }
 
     // Server-side isolation: ensure this account is actually a student.
-    const { data: rolesRows } = await supabase
+    // Only sign out on a confirmed mismatch, not on a transient read error.
+    const { data: rolesRows, error: rolesErr } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", data.user.id);
+    if (rolesErr) {
+      console.error("[student-login] role lookup failed; keeping session:", rolesErr.message);
+      setBusy(false);
+      toast.success("تم تسجيل الدخول");
+      navigate({ to: "/" });
+      return;
+    }
     const roles = (rolesRows ?? []).map((r) => r.role as string);
     if (!roles.includes("student")) {
+      console.warn("[student-login] signing out: not a student. roles=", roles);
       await supabase.auth.signOut();
       setBusy(false);
       return toast.error("هذا الحساب ليس حساب طالب.");
     }
+
 
     setBusy(false);
     toast.success("تم تسجيل الدخول");
