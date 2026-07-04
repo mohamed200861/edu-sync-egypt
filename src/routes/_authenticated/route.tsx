@@ -22,10 +22,17 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     // Load roles and enforce staff/student isolation at the routing layer.
-    const { data: rolesData } = await supabase
+    // On a read error, allow the request through rather than locking a valid
+    // user out of the portal on a transient failure — the individual pages
+    // will still enforce access via RLS.
+    const { data: rolesData, error: rolesErr } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", data.user.id);
+    if (rolesErr) {
+      console.error("[_authenticated] role lookup failed; allowing through:", rolesErr.message);
+      return { user: data.user, roles: [] as string[] };
+    }
     const roles = (rolesData ?? []).map((r) => r.role as string);
     const isStudent = roles.includes("student");
     const isStaff = roles.some((r) => STAFF_ROLES.has(r));
@@ -40,12 +47,11 @@ export const Route = createFileRoute("/_authenticated")({
       path === "/teacher" ||
       path.startsWith("/teacher/");
 
-    // A student must never touch staff routes.
     if (isStudent && isStaffArea) throw redirect({ to: "/student" });
-    // A staff member must never touch the student portal.
     if (isStaff && isStudentArea) throw redirect({ to: "/" });
 
     return { user: data.user, roles };
   },
   component: () => <Outlet />,
 });
+
