@@ -31,6 +31,31 @@ function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  const sendReset = async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes("@")) {
+      return toast.error("أدخل بريدك الإلكتروني أولاً ثم اضغط \"نسيت كلمة المرور؟\".");
+    }
+    if (trimmed.endsWith(STUDENT_EMAIL_DOMAIN)) {
+      return toast.error("هذه بوابة الموظفين. حسابات الطلاب لا تستخدم البريد.");
+    }
+    setResetBusy(true);
+    const redirectTo = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo });
+    setResetBusy(false);
+    if (error) {
+      console.error("[admin-login] resetPasswordForEmail failed:", {
+        code: (error as { code?: string }).code,
+        status: (error as { status?: number }).status,
+        name: error.name,
+        message: error.message,
+      });
+      return toast.error(error.message || "تعذّر إرسال رابط إعادة التعيين.");
+    }
+    toast.success("تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك.");
+  };
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,9 +66,16 @@ function AdminLoginPage() {
     setBusy(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email: trimmed, password });
     if (error || !data.user) {
-      console.warn("[admin-login] sign-in failed:", error?.message);
+      // Surface the full Supabase error so failures are diagnosable instead of opaque.
+      console.error("[admin-login] signInWithPassword failed:", {
+        code: (error as { code?: string } | null)?.code,
+        status: (error as { status?: number } | null)?.status,
+        name: error?.name,
+        message: error?.message,
+        hasUser: !!data?.user,
+      });
       setBusy(false);
-      return toast.error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+      return toast.error(error?.message ?? "البريد الإلكتروني أو كلمة المرور غير صحيحة.");
     }
 
     // Fetch roles. Only sign the user back out if we actually confirm a mismatch —
