@@ -145,7 +145,17 @@ function AdminLoginPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="si-password">كلمة المرور</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="si-password">كلمة المرور</Label>
+                  <button
+                    type="button"
+                    onClick={sendReset}
+                    disabled={resetBusy}
+                    className="text-xs text-primary underline-offset-4 hover:underline disabled:opacity-50"
+                  >
+                    {resetBusy ? "جارٍ الإرسال..." : "نسيت كلمة المرور؟"}
+                  </button>
+                </div>
                 <Input
                   id="si-password"
                   type="password"
