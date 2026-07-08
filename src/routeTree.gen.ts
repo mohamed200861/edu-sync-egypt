@@ -20,6 +20,7 @@ import { Route as AuthenticatedTeacherIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedStudentIndexRouteImport } from './routes/_authenticated/student/index'
 import { Route as AuthenticatedSecretaryIndexRouteImport } from './routes/_authenticated/secretary/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as ApiPublicDiagResetRouteImport } from './routes/api/public/diag-reset'
 import { Route as AuthenticatedSecretaryScannerRouteImport } from './routes/_authenticated/secretary/scanner'
 import { Route as AuthenticatedSecretaryReceptionRouteImport } from './routes/_authenticated/secretary/reception'
 import { Route as AuthenticatedSecretaryPaymentsRouteImport } from './routes/_authenticated/secretary/payments'
@@ -96,6 +97,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicDiagResetRoute = ApiPublicDiagResetRouteImport.update({
+  id: '/api/public/diag-reset',
+  path: '/api/public/diag-reset',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSecretaryScannerRoute =
   AuthenticatedSecretaryScannerRouteImport.update({
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/secretary/payments': typeof AuthenticatedSecretaryPaymentsRoute
   '/secretary/reception': typeof AuthenticatedSecretaryReceptionRoute
   '/secretary/scanner': typeof AuthenticatedSecretaryScannerRoute
+  '/api/public/diag-reset': typeof ApiPublicDiagResetRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/secretary/': typeof AuthenticatedSecretaryIndexRoute
   '/student/': typeof AuthenticatedStudentIndexRoute
@@ -263,6 +270,7 @@ export interface FileRoutesByTo {
   '/secretary/payments': typeof AuthenticatedSecretaryPaymentsRoute
   '/secretary/reception': typeof AuthenticatedSecretaryReceptionRoute
   '/secretary/scanner': typeof AuthenticatedSecretaryScannerRoute
+  '/api/public/diag-reset': typeof ApiPublicDiagResetRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/secretary': typeof AuthenticatedSecretaryIndexRoute
   '/student': typeof AuthenticatedStudentIndexRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/_authenticated/secretary/payments': typeof AuthenticatedSecretaryPaymentsRoute
   '/_authenticated/secretary/reception': typeof AuthenticatedSecretaryReceptionRoute
   '/_authenticated/secretary/scanner': typeof AuthenticatedSecretaryScannerRoute
+  '/api/public/diag-reset': typeof ApiPublicDiagResetRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/secretary/': typeof AuthenticatedSecretaryIndexRoute
   '/_authenticated/student/': typeof AuthenticatedStudentIndexRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
     | '/secretary/payments'
     | '/secretary/reception'
     | '/secretary/scanner'
+    | '/api/public/diag-reset'
     | '/admin/'
     | '/secretary/'
     | '/student/'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/secretary/payments'
     | '/secretary/reception'
     | '/secretary/scanner'
+    | '/api/public/diag-reset'
     | '/admin'
     | '/secretary'
     | '/student'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/_authenticated/secretary/payments'
     | '/_authenticated/secretary/reception'
     | '/_authenticated/secretary/scanner'
+    | '/api/public/diag-reset'
     | '/_authenticated/admin/'
     | '/_authenticated/secretary/'
     | '/_authenticated/student/'
@@ -411,6 +423,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   AdminLoginRoute: typeof AdminLoginRoute
   StudentLoginRoute: typeof StudentLoginRoute
+  ApiPublicDiagResetRoute: typeof ApiPublicDiagResetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -491,6 +504,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/diag-reset': {
+      id: '/api/public/diag-reset'
+      path: '/api/public/diag-reset'
+      fullPath: '/api/public/diag-reset'
+      preLoaderRoute: typeof ApiPublicDiagResetRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/secretary/scanner': {
       id: '/_authenticated/secretary/scanner'
@@ -717,6 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   AdminLoginRoute: AdminLoginRoute,
   StudentLoginRoute: StudentLoginRoute,
+  ApiPublicDiagResetRoute: ApiPublicDiagResetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
