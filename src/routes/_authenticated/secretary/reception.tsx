@@ -5,11 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
-import { recordAttendance } from "@/lib/attendance.functions";
-import { toast } from "sonner";
-import { Radio, UserRound, CheckCircle2, X } from "lucide-react";
+import { Radio, UserRound, CheckCircle2, X, AlertTriangle } from "lucide-react";
+
 
 type StudentSummary = {
   student_user_id: string;
@@ -29,7 +26,6 @@ export const Route = createFileRoute("/_authenticated/secretary/reception")({
 function ReceptionPage() {
   const [current, setCurrent] = useState<StudentSummary | null>(null);
   const [feed, setFeed] = useState<StudentSummary[]>([]);
-  const recordFn = useServerFn(recordAttendance);
 
   useEffect(() => {
     const ch = supabase
@@ -52,6 +48,11 @@ function ReceptionPage() {
         ]);
         const s = studentRes.data;
         if (!s) return;
+        // Only display students whose attendance was already recorded server-side
+        // by the scanner. Broadcast payloads are unauthenticated and any signed-in
+        // user could spoof a scan event — we never trust the broadcast to prompt
+        // a confirmation action here.
+        if (!attRes.data) return;
         const summary: StudentSummary = {
           student_user_id: uid,
           full_name: profRes.data?.full_name ?? "",
@@ -61,8 +62,8 @@ function ReceptionPage() {
           academic_year: (s.academic_years as { name?: string } | null)?.name ?? null,
           scanned_at: new Date().toISOString(),
           attendance_today: {
-            recorded: !!attRes.data,
-            at: attRes.data?.attended_at ?? null,
+            recorded: true,
+            at: attRes.data.attended_at ?? null,
           },
         };
         setCurrent(summary);
@@ -73,22 +74,6 @@ function ReceptionPage() {
       supabase.removeChannel(ch);
     };
   }, []);
-
-  const confirm = useMutation({
-    mutationFn: () =>
-      recordFn({
-        data: {
-          student_user_id: current!.student_user_id,
-          device: "manual",
-          status: "present",
-        },
-      }),
-    onSuccess: (r) => {
-      toast.success(r.created ? "تم تسجيل الحضور" : "الحضور مسجّل مسبقاً اليوم");
-      setCurrent((c) => c && { ...c, attendance_today: { recorded: true, at: new Date().toISOString() } });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   return (
     <AppShell title="شاشة الاستقبال">
@@ -116,22 +101,23 @@ function ReceptionPage() {
               </div>
               <div className="rounded-lg border border-border bg-background p-4">
                 <div className="text-xs text-muted-foreground">حضور اليوم</div>
-                {current.attendance_today.recorded ? (
-                  <div className="mt-2 flex items-center gap-2">
-                    <CheckCircle2 className="size-5 text-primary" />
-                    <span className="font-medium">
-                      تم التسجيل — {new Date(current.attendance_today.at ?? "").toLocaleTimeString("ar-EG")}
-                    </span>
-                  </div>
-                ) : (
-                  <Button className="mt-3" onClick={() => confirm.mutate()} disabled={confirm.isPending}>
-                    {confirm.isPending ? "جارٍ..." : "تأكيد الحضور"}
-                  </Button>
-                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <CheckCircle2 className="size-5 text-primary" />
+                  <span className="font-medium">
+                    تم التسجيل — {new Date(current.attendance_today.at ?? "").toLocaleTimeString("ar-EG")}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  للتأكيد اليدوي، استخدم شاشة الماسح — هذه الشاشة للعرض فقط ولا تسمح بتسجيل الحضور مباشرةً.
+                </span>
               </div>
             </CardContent>
           </Card>
         ) : (
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
