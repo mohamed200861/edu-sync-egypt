@@ -43,8 +43,17 @@ export function QrDisplay({
     if (!dataUrl) return;
     const w = window.open("", "_blank", "width=480,height=640");
     if (!w) return;
+    const esc = (s: string) =>
+      s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    const safeName = esc(studentName ?? "");
+    const safeCode = esc(studentCode ?? "");
     w.document.write(`
-      <html dir="rtl" lang="ar"><head><title>بطاقة QR — ${studentCode ?? ""}</title>
+      <html dir="rtl" lang="ar"><head><title>بطاقة QR — ${safeCode}</title>
       <style>
         body{font-family:system-ui,-apple-system,'Cairo',sans-serif;text-align:center;padding:32px}
         h2{margin:16px 0 4px}
@@ -55,14 +64,15 @@ export function QrDisplay({
       <body>
         <div class="card">
           <img src="${dataUrl}" width="${size}" height="${size}" alt="QR" />
-          <h2>${studentName ?? ""}</h2>
-          <code dir="ltr">${studentCode ?? ""}</code>
+          <h2>${safeName}</h2>
+          <code dir="ltr">${safeCode}</code>
           <p style="color:#64748b;font-size:12px;margin-top:12px">مركز الأحياء التعليمي</p>
         </div>
         <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}</script>
       </body></html>`);
     w.document.close();
   };
+
 
   return (
     <div className="flex flex-col items-center gap-3">
