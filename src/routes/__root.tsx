@@ -87,10 +87,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "منصة متكاملة لإدارة الطلاب والحضور والدرجات والمدفوعات في مركز الأحياء التعليمي.",
+          "نظام إدارة الطلاب لمركز الأحياء التعليمي: تسجيل الطلاب، الحضور، المدفوعات، والدرجات.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "مركز الأحياء التعليمي — نظام إدارة الطلاب" },
+      { name: "twitter:description", content: "نظام إدارة الطلاب لمركز الأحياء التعليمي: تسجيل الطلاب، الحضور، المدفوعات، والدرجات." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/354fb1ad-d421-4f64-8394-aca51f27e619/id-preview-21286cec--2a81ccce-aeb4-4a4e-b35f-b021de9d554a.lovable.app-1783590367710.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/354fb1ad-d421-4f64-8394-aca51f27e619/id-preview-21286cec--2a81ccce-aeb4-4a4e-b35f-b021de9d554a.lovable.app-1783590367710.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
