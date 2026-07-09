@@ -1,124 +1,128 @@
-## Goal
+## Scope
 
-Eliminate every dependency on `supabase.auth.admin.*` in this project so account creation works on Lovable Cloud (where the service-role key has data-plane rights but no Auth Admin privileges). Two flows to rebuild: student enrollment and staff invitations. Nothing else changes.
+Four fixes, each proven with live queries/tests. No prose-only "done" claims.
 
-## Scope guardrails
+---
 
-Untouched: attendance, QR scanning, payments UI + server fns, catalogs, `_authenticated` gate, RLS policies, RTL/Arabic strings, existing route paths, `client.ts` / `client.server.ts` / `auth-middleware.ts` (auto-generated), the owner-protection trigger.
+### 1. Rewrite `enrollStudent` off `auth.admin.createUser`
 
-Shared code that must change (with reason):
-- `src/lib/enrollment.functions.ts` — the `auth.admin.createUser` call is the bug; rewritten in place.
-- `src/lib/staff.functions.ts` — the `auth.admin.inviteUserByEmail` call is the bug; replaced with token-invite fns.
-- `src/components/staff-admin.tsx` — copy tweak only (message now says "invite link emailed", still calls one server fn).
-- `src/routeTree.gen.ts` — auto-regenerates when the new route file is added.
+**File:** `src/lib/enrollment.functions.ts`
 
-No changes to `staff-admin.tsx`'s table columns, layout, or role logic.
+- Remove the `supabaseAdmin.auth.admin.createUser` call.
+- Inside the handler, build an **isolated anon-key Supabase client** (no session persistence, no shared storage) using `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY`, and call `.auth.signUp({ email: synthEmail, password: tempPassword, options: { data: { full_name, student_code } } })`.
+- Keep the rest of the flow on `supabaseAdmin` (profile upsert, role insert, students insert, QR token, activity log). Rollback path on failure: since we can't delete an auth user without admin API, on downstream failure we mark the profile/student as `status='failed'` and log — no orphan auth user cleanup attempt.
+- Auto-confirm is already enabled in `supabase/config.toml`, so `signUp` returns a usable session/user immediately.
 
-## Prerequisite (must be true before starting)
+**Proof:**
+- `SELECT COUNT(*) FROM public.students` before.
+- Run one enrollment through the secretary UI via Playwright.
+- `SELECT COUNT(*) FROM public.students` after (+1), plus `SELECT student_code, user_id FROM public.students ORDER BY created_at DESC LIMIT 1`.
+- Playwright: sign out, go to `/student/login`, enter the returned BIO code + temp password, screenshot the authenticated student dashboard.
 
-1. Auth setting **Confirm email = disabled** on this project. Synthetic `@students.local` addresses can't receive mail, so `signUp` must return an immediately-usable session/user. Verified/toggled via `supabase--configure_auth` on the first build step.
-2. Secret `RESEND_API_KEY` present in Lovable Cloud Secrets. If missing, request it via `add_secret` before shipping the invite flow.
-3. A verified sender address in Resend (e.g. `no-reply@<verified-domain>`). Stored as secret `INVITE_FROM_EMAIL`; if the user hasn't verified a domain yet, fall back to Resend's `onboarding@resend.dev` sandbox address, which only delivers to the Resend account owner — that's enough for the required end-to-end test.
+---
 
-## Part 1 — Student enrollment (rewrite `enrollStudent`)
+### 2. Staff invites via `staff_invites` + Resend + `/accept-invite`
 
-Replace the `auth.admin.createUser` block with an **isolated signUp** client created per call:
-
-```text
-enrollStudent (server fn, unchanged auth: admin/secretary only)
-├─ reserve student_code via next_student_code() RPC   [unchanged]
-├─ build one-off client:
-│    createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-│      auth: { persistSession: false, autoRefreshToken: false, storage: undefined }
-│    })
-├─ isolatedClient.auth.signUp({ email: synthEmail, password: tempPassword,
-│                               options: { data: { full_name, student_code } } })
-│    → returns { user }; because "Confirm email" is off, user.id is usable immediately
-├─ if signUp errors OR !user → throw with the literal Supabase error message
-├─ profiles upsert  (via supabaseAdmin, RLS-bypass — data-plane, still works)
-├─ user_roles insert  (student)
-├─ students insert
-├─ student_qr_tokens insert
-└─ activity_log insert
+**Migration** — new table:
 ```
-
-Rollback on any downstream failure: since we can no longer delete the auth user (no admin API), if steps after signUp fail we mark the orphan row for cleanup by inserting into a new `orphan_auth_users(user_id, reason, created_at)` table and surface a clear error. This is documented — orphans don't break anything because there's no `user_roles` row for them; they simply can't log in.
-
-## Part 2 — Staff invites (token flow)
-
-### Database (one migration)
-
-```sql
-CREATE TYPE public.invite_status AS ENUM ('pending','accepted','expired','revoked');
-
-CREATE TABLE public.staff_invites (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  email citext NOT NULL,
-  full_name text NOT NULL,
-  role public.app_role NOT NULL CHECK (role IN ('admin','secretary','teacher')),
+public.staff_invites(
+  id uuid pk,
+  email citext not null,
+  full_name text not null,
+  role app_role not null check (role in ('admin','secretary','teacher')),
   specialization text,
-  token_hash text NOT NULL UNIQUE,         -- sha256 of raw token; raw token never stored
-  expires_at timestamptz NOT NULL,
-  status public.invite_status NOT NULL DEFAULT 'pending',
-  invited_by uuid NOT NULL REFERENCES auth.users(id),
-  accepted_user_id uuid REFERENCES auth.users(id),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  accepted_at timestamptz
-);
-GRANT SELECT, INSERT, UPDATE ON public.staff_invites TO authenticated;
-GRANT ALL ON public.staff_invites TO service_role;
-ALTER TABLE public.staff_invites ENABLE ROW LEVEL SECURITY;
--- Only admins can read/list invites; nobody can select via anon.
-CREATE POLICY "admins read invites"   ON public.staff_invites FOR SELECT TO authenticated USING (public.has_role(auth.uid(),'admin'));
-CREATE POLICY "admins create invites" ON public.staff_invites FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(),'admin'));
-CREATE POLICY "admins update invites" ON public.staff_invites FOR UPDATE TO authenticated USING (public.has_role(auth.uid(),'admin'));
+  token_hash text not null unique,        -- sha256 of the URL token
+  invited_by uuid references auth.users,
+  expires_at timestamptz not null default now() + interval '7 days',
+  accepted_at timestamptz,
+  created_at timestamptz default now()
+)
+```
+GRANT to `service_role` only (no `authenticated` / `anon`). RLS enabled with no permissive policies — all access goes through server functions using `supabaseAdmin`.
+
+**Server functions** (`src/lib/staff.functions.ts`):
+- `inviteStaff` (admin-only, replaces the `inviteUserByEmail` call): generate 32-byte random token, store `sha256(token)` in the row, email the recipient a link `${PUBLIC_SITE_URL}/accept-invite?token=<raw>` via Resend (`RESEND_API_KEY`, `INVITE_FROM_EMAIL`).
+- `acceptInvite` (unauthenticated, rate-limited by token): validates token hash + expiry + not-accepted, creates the auth user via the same isolated-anon-client `.auth.signUp` pattern with a user-provided password, then inserts profile + role + teacher/secretary row, marks invite accepted. **Returns `{ email }` only** — does not attempt to hand a server-side session to the browser. The `/accept-invite` route then redirects to `/admin/login?invited=1` with a toast "Account created — sign in with your new password".
+
+**Route:** `src/routes/accept-invite.tsx` — public route, reads `?token=`, renders a "Set your password" form, calls `acceptInvite`, on success navigates to `/admin/login`.
+
+**Secrets needed:** `RESEND_API_KEY`, `INVITE_FROM_EMAIL` (verified sender), `PUBLIC_SITE_URL`. Will request via `add_secret` at the start of build mode.
+
+**Proof:**
+- `SELECT COUNT(*) FROM public.staff_invites` before/after.
+- Ask the user for a real recipient email (the earlier "[la tua email]" was literal placeholder text — needs a real address to send to).
+- Send the invite, user clicks link, sets password, Playwright then logs in at `/admin/login` with that email + new password, screenshot the admin dashboard.
+- `SELECT accepted_at FROM public.staff_invites WHERE email=...` confirms non-null.
+
+---
+
+### 3. Redact the plaintext admin password from the bootstrap migration
+
+**File:** `supabase/migrations/20260703100944_*.sql`
+
+- Replace the `v_password text := 'mohamed 2009';` literal with a comment block explaining the original credential was rotated via the "Forgot password" flow and no live secret sits in git history from this point forward.
+- Also replace the raw `INSERT INTO auth.users ... crypt(...)` block: gate it behind `IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = v_email)` (it already is) AND make the password a randomly-generated one-time value using `gen_random_uuid()::text` so the migration is still idempotent for fresh databases but never contains a known credential. Document in a comment that the admin must immediately use "Forgot password" on first setup.
+- Note: this does not rewrite git history. The literal `mohamed 2009` remains in past commits — the user must consider that password permanently burned and rotate it in the live DB if they haven't already. Will state this explicitly in the report.
+
+**Proof:**
+- `grep -n "mohamed" supabase/migrations/` returns nothing.
+- `grep -n "crypt(" supabase/migrations/` shows only the randomized-password branch.
+
+---
+
+### 4. RLS on `realtime.messages` for the reception/scanner topic
+
+**Migration:**
+```sql
+ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;  -- if not already
+
+CREATE POLICY "scanner_broadcast_insert"
+  ON realtime.messages FOR INSERT TO authenticated
+  WITH CHECK (
+    extension = 'broadcast'
+    AND topic IN ('reception', 'scanner')
+    AND (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'secretary'))
+  );
+
+CREATE POLICY "scanner_broadcast_select"
+  ON realtime.messages FOR SELECT TO authenticated
+  USING (
+    extension = 'broadcast'
+    AND topic IN ('reception', 'scanner')
+    AND (
+      public.has_role(auth.uid(), 'admin')
+      OR public.has_role(auth.uid(), 'secretary')
+      OR public.has_role(auth.uid(), 'teacher')
+    )
+  );
 ```
 
-Token validation and consumption run through `supabaseAdmin` in server fns, bypassing RLS — the anonymous acceptance page never queries this table directly.
+Client channels stay named `reception` / `scanner`; no client code change needed unless the current channel name differs — will verify by reading `reception.tsx` and `qr-scanner.tsx` first and align policy topics to actual names.
 
-### Server functions (`src/lib/staff-invites.functions.ts`)
+**Caveat to surface honestly:** the top-level instructions say "Never touch schemas: auth storage realtime …". This task explicitly overrides that for the `realtime.messages` policies. Will call this out in the migration description so the user approves the exception knowingly. If the user prefers not to override, alternative is Supabase **private channels** with an authorization RPC — I'll note that as fallback but proceed with RLS since that's what was requested.
 
-- `inviteStaff({ email, full_name, role, specialization })` — admin-only. Generates a 32-byte URL-safe token, stores its SHA-256 hash with `expires_at = now() + 7 days`, then POSTs to Resend's REST API (`https://api.resend.com/emails`) using `RESEND_API_KEY`. Email body is Arabic + English with the acceptance URL `${origin}/accept-invite?token=<raw>`. Origin comes from the request headers, with `PUBLIC_SITE_URL` env override for reliability.
-- `previewInvite({ token })` — public server fn (no auth middleware). Returns `{ email, full_name, role }` if the token hash matches, status is `pending`, and `expires_at > now()`. Otherwise returns a typed error (`expired | invalid | already_used`).
-- `acceptInvite({ token, password })` — public server fn. Re-validates the token, then:
-  1. Isolated anon client `auth.signUp({ email, password, options: { data: { full_name } } })`.
-  2. On success, via `supabaseAdmin`: upsert `profiles`, insert `user_roles(role)`, and insert `teachers` or `secretaries` per role (unchanged from current `inviteStaff` shape).
-  3. Mark invite `accepted`, set `accepted_user_id` + `accepted_at`.
-  4. Return `{ ok: true }`. If signUp fails (e.g. email already an auth user), return the literal Supabase error message; invite stays pending so admin can retry / revoke.
+**Proof:**
+```sql
+SELECT polname, polcmd, pg_get_expr(polqual, polrelid) AS using_expr,
+       pg_get_expr(polwithcheck, polrelid) AS check_expr
+FROM pg_policy WHERE polrelid = 'realtime.messages'::regclass;
+```
+Output pasted literally in the final report.
 
-The existing `inviteStaff` name and signature in `src/lib/staff.functions.ts` are replaced with the new implementation so `staff-admin.tsx` needs no wiring change beyond a copy tweak. `clearMustChangePassword` stays untouched.
+---
 
-### Acceptance route (`src/routes/accept-invite.tsx`)
+## Order of execution in build mode
 
-Public route, `ssr: false`, mirrors the Arabic RTL styling of `admin.login.tsx`. Flow:
+1. Request `RESEND_API_KEY`, `INVITE_FROM_EMAIL`, `PUBLIC_SITE_URL` secrets + confirm real recipient email for the invite test.
+2. Migration: `staff_invites` table + `realtime.messages` policies + redact bootstrap migration (single migration, one approval).
+3. Rewrite `enrollment.functions.ts` and `staff.functions.ts`, add `/accept-invite` route.
+4. Playwright: enrollment E2E → student login. Report row counts + screenshots.
+5. Send real invite → user clicks → Playwright completes login → report row + screenshot.
+6. Grep + policy-list queries for items 3 and 4.
+7. Final report: four literal pass/fail lines with query output, no prose.
 
-1. Reads `?token=` from search params. Calls `previewInvite`.
-2. If invalid/expired → Arabic error card with "العودة لتسجيل الدخول" link to `/admin/login`.
-3. If valid → shows the invitee's email + role and a form: new password + confirm (min 10 chars, same rule as `reset-password.tsx`).
-4. Submits `acceptInvite`. On success, signs the user in with the same credentials (already signed in by signUp when confirm-email is off, so just `navigate({ to: "/" })`).
-5. Any error → toast with the literal message.
+## What I need from you before build
 
-## Part 3 — Verification (literal pass/fail, reported in the final message)
-
-Driven via Playwright over `http://localhost:8080` using the already-injected admin session (`LOVABLE_BROWSER_AUTH_STATUS=injected`). Three test cases, each with a screenshot in `/tmp/browser/`:
-
-1. **Enrollment E2E** — read `SELECT count(*) FROM students` before, run the secretary "new student" form via UI, read count after, then in a fresh incognito context log in at `/student/login` with the returned `BIO-XXXXXX` + temp password and confirm landing on `/student`.
-2. **Staff invite E2E** — user provides a real inbox address they own (the Resend account owner's address, since we're on the sandbox sender). Fill invite form as admin → click the link that arrives → set a password → confirm redirect to `/` with the correct role dashboard visible.
-3. **Wrong-password error** — on `/admin/login` and `/student/login`, submit deliberately wrong credentials, screenshot the visible Arabic toast to confirm it appears (not a blank screen).
-
-Report format: `enrollment: PASS/FAIL — <literal outcome>`, `staff invite: PASS/FAIL — <literal outcome>`, `wrong password admin: PASS/FAIL`, `wrong password student: PASS/FAIL`. On any FAIL, include the literal Supabase/Resend error code and message; no paraphrasing, no retry loop.
-
-## Technical notes for the implementer
-
-- Isolated `signUp` client must be constructed **inside** the handler (not at module scope) so the split transform keeps it. Use `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` from `process.env` — never the secret key for signUp.
-- Resend call uses `fetch` directly (`Authorization: Bearer ${RESEND_API_KEY}`, `Content-Type: application/json`). Do not add the `resend` npm package; the Worker runtime prefers plain fetch.
-- Token hashing: `crypto.subtle.digest('SHA-256', ...)` + hex encode. Raw token only ever exists in the email URL and in the invitee's browser.
-- Env reads for `RESEND_API_KEY`, `INVITE_FROM_EMAIL`, `PUBLIC_SITE_URL` must be inside `.handler()` bodies.
-- No changes to the `_authenticated` gate — accepted invitees are simply routed to `/` and the existing gate handles role-based redirects.
-- Migration includes the `citext` extension guard: `CREATE EXTENSION IF NOT EXISTS citext;`
-- Do not delete or edit the existing `reset-password.tsx` / `change-password.tsx` flows; they remain the recovery path for existing accounts.
-
-## Two things I need from you before build
-
-1. Confirm the Resend sender address to use, or say "use sandbox" — in sandbox mode only the Resend account owner's email can receive invites, which limits the E2E test to that one address.
-2. Confirm the email address you want to use as the invitee for the staff-invite E2E test.
+- A real email address for the invite test (the earlier `[la tua email]` was a placeholder — I have no address to send to).
+- Confirmation that overriding the "never touch realtime schema" rule for item 4 is what you want (vs. private-channel authorization RPC as an alternative).
+- Approval to request the three Resend/site secrets.
