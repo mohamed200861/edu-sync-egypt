@@ -46,6 +46,7 @@ export const enrollStudent = createServerFn({ method: "POST" })
       throw new Error("Forbidden: only administrators and secretaries can enroll students.");
     }
 
+    const { createClient } = await import("@supabase/supabase-js");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // 1. Reserve a Student ID
@@ -53,25 +54,45 @@ export const enrollStudent = createServerFn({ method: "POST" })
     if (codeErr || !codeData) throw new Error(codeErr?.message ?? "Failed to generate student code");
     const studentCode = codeData as unknown as string;
 
-    // 2. Create auth user
+    // 2. Create auth user via ANON signUp (avoids auth.admin.* which is unavailable on this instance).
     const tempPassword = generateTempPassword();
     const synthEmail = studentCodeToEmail(studentCode);
 
-    const { data: created, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+    const anonClient = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_PUBLISHABLE_KEY!,
+      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+    );
+
+    const { data: signUpData, error: signUpErr } = await anonClient.auth.signUp({
       email: synthEmail,
       password: tempPassword,
-      email_confirm: true,
-      user_metadata: { full_name: data.full_name, student_code: studentCode },
+      options: { data: { full_name: data.full_name, student_code: studentCode } },
     });
-    if (authErr || !created.user) throw new Error(authErr?.message ?? "Failed to create user");
-    const newUserId = created.user.id;
+    if (signUpErr || !signUpData.user) {
+      throw new Error(signUpErr?.message ?? "Failed to create student auth account");
+    }
+    const newUserId = signUpData.user.id;
 
-    // 3. Profile (upsert — trigger may have already inserted a blank row)
+    // Cleanup helper that uses privileged admin client, since we can't delete via anon.
+    const cleanup = async () => {
+      try {
+        await supabaseAdmin.from("students").delete().eq("user_id", newUserId);
+        await supabaseAdmin.from("user_roles").delete().eq("user_id", newUserId);
+        await supabaseAdmin.from("profiles").delete().eq("id", newUserId);
+        // best-effort auth user delete (may 403 on this instance)
+        await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
+      } catch {
+        /* best-effort */
+      }
+    };
+
+    // 3. Profile (upsert — handle_new_user trigger may have inserted a blank row)
     const { error: profErr } = await supabaseAdmin
       .from("profiles")
       .upsert({ id: newUserId, full_name: data.full_name });
     if (profErr) {
-      await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
+      await cleanup();
       throw new Error(profErr.message);
     }
 
@@ -80,7 +101,7 @@ export const enrollStudent = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: newUserId, role: "student" });
     if (roleErr) {
-      await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
+      await cleanup();
       throw new Error(roleErr.message);
     }
 
@@ -101,7 +122,7 @@ export const enrollStudent = createServerFn({ method: "POST" })
       enrolled_by: userId,
     });
     if (stuErr) {
-      await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
+      await cleanup();
       throw new Error(stuErr.message);
     }
 

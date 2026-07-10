@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { resolveStudentQrToken, type ResolvedStudent } from "@/lib/qr.functions";
 import { recordAttendance } from "@/lib/attendance.functions";
-import { supabase } from "@/integrations/supabase/client";
+import { broadcastScan } from "@/lib/staff.functions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,13 +17,14 @@ import { useEffect, useState } from "react";
 function ScannerPage({ profileBase }: { profileBase: string }) {
   const resolveFn = useServerFn(resolveStudentQrToken);
   const recordFn = useServerFn(recordAttendance);
+  const broadcastFn = useServerFn(broadcastScan);
   const navigate = useNavigate();
   const [current, setCurrent] = useState<ResolvedStudent | null>(null);
   const [scanning, setScanning] = useState(true);
 
-  // Broadcast channel for reception view
   useEffect(() => {
-    // Channel is subscribed lazily inside resolve mutation; nothing to init here.
+    // No client-side channel setup — broadcast is now done server-side
+    // via the broadcastScan server function (staff-only).
   }, []);
 
   const resolve = useMutation({
@@ -32,15 +33,12 @@ function ScannerPage({ profileBase }: { profileBase: string }) {
     onSuccess: async (r) => {
       setCurrent(r);
       setScanning(false);
-      // Broadcast to reception listeners
-      const channel = supabase.channel("reception");
-      await channel.subscribe();
-      await channel.send({
-        type: "broadcast",
-        event: "student_scanned",
-        payload: { student_user_id: r.student_user_id, at: new Date().toISOString() },
-      });
-      supabase.removeChannel(channel);
+      // Server-side authorized broadcast: only staff (admin/secretary) can emit.
+      try {
+        await broadcastFn({ data: { student_user_id: r.student_user_id } });
+      } catch (err) {
+        console.error("broadcastScan failed", err);
+      }
       if (r.attendance_today.just_created) {
         toast.success(`تم تسجيل الحضور تلقائياً — ${r.full_name}`);
       }
@@ -50,6 +48,7 @@ function ScannerPage({ profileBase }: { profileBase: string }) {
       setScanning(true);
     },
   });
+
 
   const confirm = useMutation({
     mutationFn: () =>

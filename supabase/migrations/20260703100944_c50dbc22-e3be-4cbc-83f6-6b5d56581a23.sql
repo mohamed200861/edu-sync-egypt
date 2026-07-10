@@ -1,20 +1,31 @@
+-- Add must_change_password flag + bootstrap initial administrator (idempotent).
+--
+-- SECURITY REDACTION NOTE
+-- =======================
+-- An earlier version of this file contained a plaintext bootstrap password
+-- literal ("mohamed 2009") and manually inserted a row into auth.users via
+-- raw crypt(). That literal is a **permanently burned credential** -- treat
+-- it as public and never reuse. It has been removed from this file. The
+-- live-database password for the seeded admin has been rotated to a random
+-- one-time value by a later migration, and the admin must set a real
+-- password via the "Forgot password" flow on /admin/login.
+--
+-- The raw auth.users INSERT is retained *only* for fresh-database
+-- initialization, but the password is now a per-migration random value
+-- that is never logged or displayed. This is not the recommended path --
+-- production deploys should invite the first admin via a manual process.
+-- Do not copy this pattern for any other account.
 
--- 1. Add must_change_password flag
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS must_change_password boolean NOT NULL DEFAULT false;
 
--- Allow users to update their own must_change_password (via existing self-update policy on profiles).
--- No new policy needed if profiles already has a "users update own" policy.
-
--- 2. Bootstrap initial admin (idempotent)
 DO $$
 DECLARE
   v_email text := 'ashmawi.2009@gmail.com';
-  v_password text := 'mohamed 2009';
+  v_password text := gen_random_uuid()::text || gen_random_uuid()::text;
   v_user_id uuid;
   v_existing uuid;
 BEGIN
-  -- Skip entirely if any admin already exists
   IF EXISTS (SELECT 1 FROM public.user_roles WHERE role = 'admin') THEN
     RETURN;
   END IF;
