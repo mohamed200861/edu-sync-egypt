@@ -46,11 +46,12 @@ export const enrollStudent = createServerFn({ method: "POST" })
       throw new Error("Forbidden: only administrators and secretaries can enroll students.");
     }
 
-    const { createClient } = await import("@supabase/supabase-js");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { createIsolatedAuthClient } = await import("@/lib/isolated-auth-client");
 
     // 1. Reserve a Student ID
     const { data: codeData, error: codeErr } = await supabaseAdmin.rpc("next_student_code");
+    console.log("[enrollStudent] next_student_code", { codeData, codeErr });
     if (codeErr || !codeData) throw new Error(codeErr?.message ?? "Failed to generate student code");
     const studentCode = codeData as unknown as string;
 
@@ -58,16 +59,18 @@ export const enrollStudent = createServerFn({ method: "POST" })
     const tempPassword = generateTempPassword();
     const synthEmail = studentCodeToEmail(studentCode);
 
-    const anonClient = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
+    const anonClient = createIsolatedAuthClient();
 
+    console.log("[enrollStudent] calling signUp", { synthEmail });
     const { data: signUpData, error: signUpErr } = await anonClient.auth.signUp({
       email: synthEmail,
       password: tempPassword,
       options: { data: { full_name: data.full_name, student_code: studentCode } },
+    });
+    console.log("[enrollStudent] signUp result", {
+      hasUser: !!signUpData?.user,
+      userId: signUpData?.user?.id,
+      error: signUpErr ? { message: signUpErr.message, status: signUpErr.status, name: signUpErr.name } : null,
     });
     if (signUpErr || !signUpData.user) {
       throw new Error(signUpErr?.message ?? "Failed to create student auth account");
