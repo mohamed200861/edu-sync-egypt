@@ -46,6 +46,21 @@ export function QrScanner({
 
     const start = async () => {
       try {
+        // Ask for camera permission FIRST — enumerateDevices() returns empty/unlabeled
+        // results until getUserMedia() has been granted at least once.
+        let permissionStream: MediaStream | null = null;
+        try {
+          permissionStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (permErr) {
+          throw new Error(
+            (permErr as Error).name === "NotAllowedError"
+              ? "تم رفض إذن الكاميرا. فعّل إذن الكاميرا من إعدادات المتصفح."
+              : "تعذّر الوصول إلى الكاميرا."
+          );
+        } finally {
+          permissionStream?.getTracks().forEach((t) => t.stop());
+        }
+
         const devices = await BrowserMultiFormatReader.listVideoInputDevices();
         // Prefer rear camera when available
         const rear = devices.find((d) => /back|rear|environment/i.test(d.label));
