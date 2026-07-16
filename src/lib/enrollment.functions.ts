@@ -47,7 +47,6 @@ export const enrollStudent = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { createIsolatedAuthClient } = await import("@/lib/isolated-auth-client");
 
     // 1. Reserve a Student ID
     const { data: codeData, error: codeErr } = await supabaseAdmin.rpc("next_student_code");
@@ -55,18 +54,23 @@ export const enrollStudent = createServerFn({ method: "POST" })
     if (codeErr || !codeData) throw new Error(codeErr?.message ?? "Failed to generate student code");
     const studentCode = codeData as unknown as string;
 
-    // 2. Create auth user via ANON signUp (avoids auth.admin.* which is unavailable on this instance).
+    // 2. Create auth user via the public signUp() method. This endpoint needs no elevated
+    // privilege, so it's safe to call directly on supabaseAdmin — a client we already know
+    // resolves its env vars correctly here. Avoids both auth.admin.createUser (blocked,
+    // 403 not_admin) and a second client needing SUPABASE_PUBLISHABLE_KEY, which isn't
+    // reliably available to server code on this Lovable Cloud instance.
     const tempPassword = generateTempPassword();
     const synthEmail = studentCodeToEmail(studentCode);
 
-    const anonClient = createIsolatedAuthClient();
-
     console.log("[enrollStudent] calling signUp", { synthEmail });
-    const { data: signUpData, error: signUpErr } = await anonClient.auth.signUp({
+    const { data: signUpData, error: signUpErr } = await supabaseAdmin.auth.signUp({
       email: synthEmail,
       password: tempPassword,
       options: { data: { full_name: data.full_name, student_code: studentCode } },
     });
+    // Prevent the shared admin client from retaining the new student's session —
+    // everything after this must still run with service-role privileges, not as the student.
+    await supabaseAdmin.auth.signOut({ scope: "local" });
     console.log("[enrollStudent] signUp result", {
       hasUser: !!signUpData?.user,
       userId: signUpData?.user?.id,
