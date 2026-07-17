@@ -115,6 +115,8 @@ function ScannerPage({ profileBase }: { profileBase: string }) {
                     value={current.attendance_percentage != null ? `${current.attendance_percentage}%` : "—"}
                   />
                 </div>
+
+                {/* ── Attendance ── */}
                 <div className="rounded-lg border border-border bg-background p-3">
                   <div className="text-xs text-muted-foreground">حضور اليوم</div>
                   {current.attendance_today.recorded ? (
@@ -131,6 +133,10 @@ function ScannerPage({ profileBase }: { profileBase: string }) {
                     </div>
                   )}
                 </div>
+
+                {/* ── Payment status ── */}
+                <PaymentPanel summary={current.payment_summary} />
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -168,6 +174,89 @@ function Info({ label, value }: { label: string; value: string | null }) {
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="font-medium">{value ?? "—"}</div>
+    </div>
+  );
+}
+
+// ─── Payment Panel ────────────────────────────────────────────────────────────
+
+type PaymentSummaryProps = {
+  summary: ResolvedStudent["payment_summary"];
+};
+
+const MONTH_NAMES_AR = [
+  "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+];
+
+function paymentBadgeStyle(
+  status: string,
+  overdue: number,
+): { label: string; className: string } {
+  if (overdue > 0) {
+    return {
+      label: `متأخر ${overdue} ${overdue === 1 ? "شهر" : "أشهر"}`,
+      className: "bg-red-100 text-red-800 border-red-200",
+    };
+  }
+  switch (status) {
+    case "paid":
+      return { label: "مدفوع", className: "bg-green-100 text-green-800 border-green-200" };
+    case "partial":
+      return { label: "جزئي", className: "bg-amber-100 text-amber-800 border-amber-200" };
+    case "pending":
+      return { label: "غير مدفوع", className: "bg-orange-100 text-orange-800 border-orange-200" };
+    case "cancelled":
+      return { label: "ملغى", className: "bg-gray-100 text-gray-600 border-gray-200" };
+    default:
+      return { label: "لا يوجد قسط", className: "bg-gray-100 text-gray-500 border-gray-200" };
+  }
+}
+
+function PaymentPanel({ summary }: PaymentSummaryProps) {
+  const monthLabel =
+    MONTH_NAMES_AR[summary.current_month_month] ?? `${summary.current_month_month}`;
+  const periodLabel = `${monthLabel} ${summary.current_month_year}`;
+  const badge = paymentBadgeStyle(summary.current_month_status, summary.overdue_months);
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-muted-foreground">حالة المدفوعات — {periodLabel}</div>
+        <span
+          className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+        >
+          {badge.label}
+        </span>
+      </div>
+
+      {summary.current_month_status !== "no_charge" &&
+        summary.current_month_status !== "cancelled" && (
+          <div className="flex gap-4 text-xs text-muted-foreground">
+            <span>
+              المستحق:{" "}
+              <span className="font-medium text-foreground">
+                {summary.amount_due.toLocaleString("ar-EG")} ج.م
+              </span>
+            </span>
+            <span>
+              المدفوع:{" "}
+              <span className="font-medium text-foreground">
+                {summary.amount_paid.toLocaleString("ar-EG")} ج.م
+              </span>
+            </span>
+          </div>
+        )}
+
+      {summary.overdue_months > 0 && (
+        <div className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-800">
+          <span>⚠</span>
+          <span>
+            يوجد {summary.overdue_months}{" "}
+            {summary.overdue_months === 1 ? "شهر متأخر" : "أشهر متأخرة"} غير مدفوعة
+          </span>
+        </div>
+      )}
     </div>
   );
 }

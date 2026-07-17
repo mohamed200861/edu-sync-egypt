@@ -42,6 +42,20 @@ export const issueStudentQrToken = createServerFn({ method: "POST" })
     return { token };
   });
 
+// ─── Payment summary type ────────────────────────────────────────────────────
+// "no_charge" means no monthly charge row exists yet for the current month.
+// Matches the JSONB returned by get_student_payment_summary().
+export type PaymentSummary = {
+  current_month_status: "paid" | "partial" | "pending" | "cancelled" | "no_charge";
+  current_month_year: number;
+  current_month_month: number;
+  amount_due: number;
+  amount_paid: number;
+  /** Count of past months still pending or partial (overdue). */
+  overdue_months: number;
+};
+
+// ─── ResolvedStudent ─────────────────────────────────────────────────────────
 export type ResolvedStudent = {
   student_user_id: string;
   student_code: string;
@@ -58,6 +72,16 @@ export type ResolvedStudent = {
   };
   attendance_percentage: number | null;
   mode: "auto" | "manual";
+  payment_summary: PaymentSummary;
+};
+
+const PAYMENT_FALLBACK: PaymentSummary = {
+  current_month_status: "no_charge",
+  current_month_year: new Date().getFullYear(),
+  current_month_month: new Date().getMonth() + 1,
+  amount_due: 0,
+  amount_paid: 0,
+  overdue_months: 0,
 };
 
 /** Resolve a scanned QR token to a student summary. Staff-only.
@@ -128,8 +152,9 @@ export const resolveStudentQrToken = createServerFn({ method: "POST" })
       just_created: false,
     };
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
     if (mode === "auto" && !existing) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: ins } = await supabaseAdmin
         .from("attendance")
         .insert({
@@ -160,6 +185,29 @@ export const resolveStudentQrToken = createServerFn({ method: "POST" })
       .eq("student_user_id", sUserId)
       .gte("attended_on", monthAgo.toISOString().slice(0, 10));
 
+    // 6. Payment summary (single RPC round-trip, SECURITY DEFINER)
+    const { data: payRaw, error: payErr } = await supabaseAdmin.rpc(
+      "get_student_payment_summary",
+      { _student_user_id: sUserId },
+    );
+    if (payErr) {
+      console.warn("[resolveStudentQrToken] payment_summary RPC error:", payErr.message);
+    }
+    const payment_summary: PaymentSummary =
+      !payErr && payRaw && typeof payRaw === "object"
+        ? {
+            current_month_status:
+              (payRaw as any).current_month_status ?? "no_charge",
+            current_month_year:
+              Number((payRaw as any).current_month_year) || new Date().getFullYear(),
+            current_month_month:
+              Number((payRaw as any).current_month_month) || new Date().getMonth() + 1,
+            amount_due: Number((payRaw as any).amount_due ?? 0),
+            amount_paid: Number((payRaw as any).amount_paid ?? 0),
+            overdue_months: Number((payRaw as any).overdue_months ?? 0),
+          }
+        : PAYMENT_FALLBACK;
+
     return {
       student_user_id: sUserId,
       student_code: student.student_code ?? "",
@@ -173,5 +221,6 @@ export const resolveStudentQrToken = createServerFn({ method: "POST" })
       attendance_percentage:
         presentCount != null ? Math.round((presentCount / 30) * 100) : null,
       mode,
+      payment_summary,
     };
   });

@@ -76,12 +76,16 @@ export const enrollStudent = createServerFn({ method: "POST" })
         await supabaseAdmin.from("students").delete().eq("user_id", newUserId);
         await supabaseAdmin.from("user_roles").delete().eq("user_id", newUserId);
         await supabaseAdmin.from("profiles").delete().eq("id", newUserId);
-        // best-effort auth user delete via SQL (may fail on this instance)
-        await supabaseAdmin.from("auth.users").delete().eq("id", newUserId).catch(() => {});
+        // best-effort: delete auth user via a SECURITY DEFINER RPC if it exists
+        // (from("auth.users") is not a valid call on the Supabase JS client)
+        await supabaseAdmin
+          .rpc("delete_auth_user", { _user_id: newUserId } as any)
+          .catch(() => {});
       } catch {
         /* best-effort */
       }
     };
+
 
     // 3. Profile (upsert — handle_new_user trigger may have inserted a blank row)
     const { error: profErr } = await supabaseAdmin
