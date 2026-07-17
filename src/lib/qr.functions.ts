@@ -25,14 +25,14 @@ export const issueStudentQrToken = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Revoke any existing active token
-    await supabaseAdmin
+    await supabase
       .from("student_qr_tokens")
       .update({ active: false, revoked_at: new Date().toISOString() })
       .eq("student_user_id", data.student_user_id)
       .eq("active", true);
 
     const token = makeToken();
-    const { error } = await supabaseAdmin.from("student_qr_tokens").insert({
+    const { error } = await supabase.from("student_qr_tokens").insert({
       student_user_id: data.student_user_id,
       token,
       active: true,
