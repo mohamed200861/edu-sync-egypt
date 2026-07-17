@@ -115,21 +115,25 @@ export const enrollStudent = createServerFn({ method: "POST" })
 
     // 6. Issue initial QR token
     const qrToken = makeQrToken();
-    await supabaseAdmin.from("student_qr_tokens").insert({
+    const { error: qrErr } = await supabase.from("student_qr_tokens").insert({
       student_user_id: newUserId,
       token: qrToken,
       active: true,
       issued_by: userId,
     });
+    if (qrErr) {
+      console.error("[enrollStudent] Failed to insert QR token", qrErr);
+      // Non blocchiamo l'enrollment se fallisce solo il QR, lo mostrerà comunque nella UI e potrà rigenerarlo in seguito
+    }
 
     // 7. Activity log (best-effort)
-    await supabaseAdmin.from("activity_log").insert({
+    await supabase.from("activity_log").insert({
       user_id: userId,
       action: "student.enroll",
       entity_type: "student",
       entity_id: newUserId,
       metadata: { student_code: studentCode, full_name: data.full_name },
-    });
+    }).catch(() => {});
 
     return {
       student_user_id: newUserId,
