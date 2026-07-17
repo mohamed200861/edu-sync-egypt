@@ -87,26 +87,13 @@ export const enrollStudent = createServerFn({ method: "POST" })
     };
 
 
-    // 3. Profile (upsert — handle_new_user trigger may have inserted a blank row)
-    const { error: profErr } = await supabaseAdmin
-      .from("profiles")
-      .upsert({ id: newUserId, full_name: data.full_name });
-    if (profErr) {
-      await cleanup();
-      throw new Error(profErr.message);
-    }
-
-    // 4. Role
-    const { error: roleErr } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: newUserId, role: "student" });
-    if (roleErr) {
-      await cleanup();
-      throw new Error(roleErr.message);
-    }
+    // 3. (Profile is handled by handle_new_user trigger in the DB)
+    
+    // 4. (Role is handled by create_student_auth_user RPC in the DB)
 
     // 5. Student record
-    const { error: stuErr } = await supabaseAdmin.from("students").insert({
+    // We use the authenticated 'supabase' client (as admin/secretary) to insert, bypassing the broken supabaseAdmin RLS issue.
+    const { error: stuErr } = await supabase.from("students").insert({
       user_id: newUserId,
       student_code: studentCode,
       date_of_birth: data.date_of_birth || null,
