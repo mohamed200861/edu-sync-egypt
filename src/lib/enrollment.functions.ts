@@ -127,13 +127,14 @@ export const enrollStudent = createServerFn({ method: "POST" })
     }
 
     // 7. Activity log (best-effort)
-    await supabase.from("activity_log").insert({
+    const { error: actErr } = await supabase.from("activity_log").insert({
       user_id: userId,
       action: "student.enroll",
       entity_type: "student",
       entity_id: newUserId,
       metadata: { student_code: studentCode, full_name: data.full_name },
-    }).catch(() => {});
+    });
+    if (actErr) console.error("[enrollStudent] Activity log failed", actErr);
 
     return {
       student_user_id: newUserId,
