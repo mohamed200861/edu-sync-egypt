@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,15 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { GraduationCap } from "lucide-react";
 import { studentCodeToEmail } from "@/lib/student-id";
-import { createServerFn } from "@tanstack/react-start";
-
-const logSecret = createServerFn({ method: "POST" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  console.log("=== EXPLICIT SECRET KEY REVEAL ===");
-  console.log("SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY);
-  console.log("================================");
-  return true;
-});
 
 export const Route = createFileRoute("/student/login")({
   ssr: false,
@@ -41,10 +32,6 @@ function StudentLoginPage() {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    logSecret().catch(() => {});
-  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

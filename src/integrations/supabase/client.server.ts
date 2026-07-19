@@ -43,11 +43,6 @@ function createSupabaseAdminClient() {
     throw new Error(message);
   }
 
-  // TEMP LOG PER RECUPERARE LA CHIAVE SEGRETA
-  console.log("=== SECRET KEY REVEAL ===");
-  console.log("SERVICE_ROLE_KEY:", SUPABASE_SERVICE_ROLE_KEY);
-  console.log("=========================");
-
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     global: {
       fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY),
